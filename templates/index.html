@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TasteBuds</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f1e8;
+      --surface: #fffaf3;
+      --surface-strong: #ffffff;
+      --text: #1f1a17;
+      --muted: #6f6258;
+      --accent: #d96c3d;
+      --accent-strong: #b94d20;
+      --border: #eadbc7;
+      --shadow: 0 14px 32px rgba(70, 45, 24, 0.10);
+      --radius-lg: 22px;
+      --radius-md: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top, rgba(217, 108, 61, 0.12), transparent 32%),
+        linear-gradient(180deg, #fdf8f2 0%, var(--bg) 100%);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .app-shell {
+      width: min(100%, 460px);
+      margin: 0 auto;
+      padding: 24px 16px 40px;
+    }
+
+    .hero {
+      margin-bottom: 18px;
+      text-align: center;
+    }
+
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: clamp(2rem, 7vw, 2.6rem);
+      line-height: 1.05;
+    }
+
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.98rem;
+    }
+
+    .card {
+      margin-top: 16px;
+      padding: 18px;
+      background: var(--surface-strong);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+    }
+
+    .composer {
+      display: grid;
+      gap: 10px;
+    }
+
+    .composer label,
+    .section-title {
+      display: block;
+      margin: 0 0 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    .composer input[type="text"] {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+    }
+
+    .composer input[type="text"]:focus {
+      border-color: rgba(217, 108, 61, 0.55);
+      box-shadow: 0 0 0 4px rgba(217, 108, 61, 0.12);
+    }
+
+    .composer button {
+      border: 0;
+      border-radius: 999px;
+      padding: 14px 18px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+      box-shadow: 0 10px 18px rgba(217, 108, 61, 0.22);
+    }
+
+    .composer button:hover,
+    .composer button:focus-visible {
+      background: var(--accent-strong);
+      transform: translateY(-1px);
+    }
+
+    .reply-card p {
+      margin: 0;
+      line-height: 1.6;
+      white-space: pre-line;
+    }
+
+    .block-card {
+      margin-top: 14px;
+      padding: 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+    }
+
+    .ad-card {
+      background: #fff6eb;
+    }
+
+    .list-clean,
+    .recipe-list {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .list-clean li,
+    .recipe-list li {
+      margin: 8px 0;
+      line-height: 1.5;
+    }
+
+    .checklist {
+      display: grid;
+      gap: 10px;
+    }
+
+    .check-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: #fff;
+      border: 1px solid var(--border);
+    }
+
+    .check-item input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
+      flex: 0 0 auto;
+    }
+
+    .ad-food {
+      margin: 14px 0 8px;
+      font-weight: 700;
+    }
+
+    .ad-food:first-of-type {
+      margin-top: 0;
+    }
+
+    @media (max-width: 480px) {
+      .app-shell {
+        padding: 18px 12px 32px;
+      }
+
+      .card {
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <section class="hero">
+      <h1>TasteBuds is alive 😏</h1>
+      <p>Quick cravings, easy picks, zero fuss.</p>
+    </section>
+
+    <section class="card">
+      <form method="post" class="composer">
+        <label for="message">What you in the mood for?</label>
+        <input
+          type="text"
+          id="message"
+          name="message"
+          placeholder="Type something..."
+          required
+        >
+        <button type="submit">Send</button>
+      </form>
+    </section>
+
+    {% if assistant_reply %}
+    <section class="card reply-card">
+      <p><strong>TasteBuds:</strong> {{ assistant_reply }}</p>
+
+      {% if ads %}
+      <div class="block-card ad-card">
+        <h3 class="section-title">🔥 Popular Spots</h3>
+        {% for ad in ads %}
+          <p class="ad-food">{{ ad.food }}</p>
+          <ul class="list-clean">
+            {% for brand in ad.brands %}
+              <li>{{ brand }}</li>
+            {% endfor %}
+          </ul>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if ingredients %}
+      <div class="block-card">
+        <p class="section-title">🛒 Ingredients Checklist</p>
+        <div class="checklist">
+          {% for ingredient in ingredients %}
+          <label class="check-item">
+            <input type="checkbox">
+            <span>{{ ingredient }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if grocery_list %}
+      <div class="block-card">
+        <h3 class="section-title">🛒 Grocery List</h3>
+        <ul class="list-clean">
+          {% for item in grocery_list %}
+            <li>{{ item }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      {% if recipe_steps %}
+      <div class="block-card">
+        <p class="section-title">📖 Recipe</p>
+        <ol class="recipe-list">
+          {% for step in recipe_steps %}
+          <li>{{ step }}</li>
+          {% endfor %}
+        </ol>
+      </div>
+      {% endif %}
+    </section>
+    {% endif %}
+  </main>
+</body>
+</html>

@@ -214,12 +214,16 @@
 
       {% if ads %}
       <div class="block-card ad-card">
-        <h3 class="section-title">🔥 Popular Spots</h3>
+        <h3 class="section-title">🔥 Order Now</h3>
         {% for ad in ads %}
           <p class="ad-food">{{ ad.food }}</p>
           <ul class="list-clean">
             {% for brand in ad.brands %}
-              <li>{{ brand }}</li>
+              <li>
+                <a href="{{ brand.url }}" target="_blank">
+                  {{ brand.name }}
+                </a>
+              </li>
             {% endfor %}
           </ul>
         {% endfor %}

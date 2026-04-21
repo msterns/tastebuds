@@ -5,12 +5,36 @@ import requests
 from flask import Flask, render_template, request, session
 
 FOOD_ADS = {
-    "pizza": ["Pizza Hut", "Domino's", "Papa John's"],
-    "tacos": ["Taco Bell", "Chipotle", "Local Taqueria"],
-    "burger": ["McDonald's", "Five Guys", "Burger King"],
-    "wings": ["Wingstop", "Buffalo Wild Wings", "Local Spot"],
-    "fries": ["McDonald's", "Checkers", "Shake Shack"],
-    "chicken": ["Chick-fil-A", "Raising Cane's", "Popeyes"]
+    "pizza": [
+        {"name": "Pizza Hut", "url": "https://www.pizzahut.com"},
+        {"name": "Domino's", "url": "https://www.dominos.com"},
+        {"name": "Papa John's", "url": "https://www.papajohns.com"},
+    ],
+    "tacos": [
+        {"name": "Taco Bell", "url": "https://www.tacobell.com"},
+        {"name": "Chipotle", "url": "https://www.chipotle.com"},
+        {"name": "Local Taqueria", "url": "https://www.google.com/search?q=local+taqueria"},
+    ],
+    "burger": [
+        {"name": "McDonald's", "url": "https://www.mcdonalds.com"},
+        {"name": "Five Guys", "url": "https://www.fiveguys.com"},
+        {"name": "Burger King", "url": "https://www.bk.com"},
+    ],
+    "wings": [
+        {"name": "Wingstop", "url": "https://www.wingstop.com"},
+        {"name": "Buffalo Wild Wings", "url": "https://www.buffalowildwings.com"},
+        {"name": "Local Spot", "url": "https://www.google.com/search?q=chicken+wings+near+me"},
+    ],
+    "fries": [
+        {"name": "McDonald's", "url": "https://www.mcdonalds.com"},
+        {"name": "Checkers", "url": "https://www.checkers.com"},
+        {"name": "Shake Shack", "url": "https://www.shakeshack.com"},
+    ],
+    "chicken": [
+        {"name": "Chick-fil-A", "url": "https://www.chick-fil-a.com"},
+        {"name": "Raising Cane's", "url": "https://www.raisingcanes.com"},
+        {"name": "Popeyes", "url": "https://www.popeyes.com"},
+    ],
 }
 
 

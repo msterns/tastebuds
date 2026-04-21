@@ -215,6 +215,16 @@ def get_cook_plan(food):
     return parse_cook_plan(raw_plan, food)
 
 
+def get_location_restaurants(food, location):
+    return (
+        f"Bet 😏 here’s some spots in {location} for {food}:\n\n"
+        f"1. {food.title()} Spot\n"
+        f"2. Local {food.title()} Kitchen\n"
+        f"3. {location} {food.title()} House\n\n"
+        "You tryna cook or pull up? 😏"
+    )
+
+
 def get_ads_for_options(options):
     ads = []
 
@@ -249,6 +259,7 @@ def get_suggestions_reply(taste, show_more=False):
     session["ads"] = get_ads_for_options(parsed_options)
     session["selected_food"] = ""
     session["ingredients"] = []
+    session["user_location"] = ""
     session["grocery_list"] = []
     session["recipe_steps"] = []
     session["stage"] = "choose_food"
@@ -273,6 +284,7 @@ def index():
 
         if lowered != "cook":
             session["ingredients"] = []
+            session["user_location"] = ""
             session["grocery_list"] = []
             session["recipe_steps"] = []
 
@@ -313,17 +325,28 @@ def index():
                 session["stage"] = "choose_food"
         elif lowered == "order":
             if selected_food:
-                assistant_reply = safe_generate_reply(
-                    build_order_prompt(selected_food),
-                    (
-                        f"For {selected_food}, hit up casual spots, diners, pubs, "
-                        "or comfort food joints."
-                    ),
-                )
-                session["stage"] = "done"
+                if not session.get("user_location"):
+                    assistant_reply = "Where you at? Drop a city or zip 😏"
+                    session["stage"] = "ask_location"
+                else:
+                    assistant_reply = get_location_restaurants(
+                        selected_food,
+                        session.get("user_location")
+                    )
+                    session["stage"] = "done"
             else:
                 assistant_reply = "Pick one first or say 'show more' 👀"
                 session["stage"] = "choose_food"
+        elif stage == "ask_location":
+            session["user_location"] = user_message
+
+            # generate restaurant suggestions
+            assistant_reply = get_location_restaurants(
+                session.get("selected_food", ""),
+                user_message
+            )
+
+            session["stage"] = "done"
         elif stage == "choose_food":
             normalized_message = normalize_choice(user_message)
             matched_option = next(

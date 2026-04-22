@@ -6,18 +6,19 @@
   <title>TasteBuds</title>
   <style>
     :root {
-      color-scheme: light;
-      --bg: #f6f1e8;
-      --surface: #fffaf3;
-      --surface-strong: #ffffff;
-      --text: #1f1a17;
-      --muted: #6f6258;
-      --accent: #d96c3d;
-      --accent-strong: #b94d20;
-      --border: #eadbc7;
-      --shadow: 0 14px 32px rgba(70, 45, 24, 0.10);
-      --radius-lg: 22px;
-      --radius-md: 16px;
+      color-scheme: dark;
+      --bg: #0d0d0d;
+      --card: #1a1a1a;
+      --card-soft: #141414;
+      --text: #ffffff;
+      --muted: #a6a6a6;
+      --primary: #ff2d2d;
+      --accent: #ff7a00;
+      --border: #262626;
+      --shadow: 0 16px 30px rgba(0, 0, 0, 0.34);
+      --radius-xl: 24px;
+      --radius-lg: 18px;
+      --radius-pill: 999px;
     }
 
     * {
@@ -28,121 +29,330 @@
       margin: 0;
       min-height: 100vh;
       background:
-        radial-gradient(circle at top, rgba(217, 108, 61, 0.12), transparent 32%),
-        linear-gradient(180deg, #fdf8f2 0%, var(--bg) 100%);
+        radial-gradient(circle at top right, rgba(255, 45, 45, 0.18), transparent 28%),
+        radial-gradient(circle at top left, rgba(255, 122, 0, 0.10), transparent 24%),
+        var(--bg);
       color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
-    .app-shell {
-      width: min(100%, 460px);
+    .app {
+      width: min(100%, 430px);
       margin: 0 auto;
-      padding: 24px 16px 40px;
+      padding: 18px 14px 40px;
     }
 
-    .hero {
-      margin-bottom: 18px;
-      text-align: center;
+    .topbar {
+      position: relative;
+      height: 80px;
+      overflow: visible;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 8px 4px 20px;
     }
 
-    .hero h1 {
-      margin: 0 0 8px;
-      font-size: clamp(2rem, 7vw, 2.6rem);
-      line-height: 1.05;
+    .logo-img {
+      position: absolute;
+      top: -35px;
+      left: 5px;
+      height: 140px;
+      display: block;
+      z-index: 5;
+      transform: rotate(-2deg);
+      filter: drop-shadow(0 0 18px rgba(255, 0, 0, 0.95));
     }
 
-    .hero p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 0.98rem;
-    }
-
-    .card {
-      margin-top: 16px;
-      padding: 18px;
-      background: var(--surface-strong);
+    .menu-btn {
+      width: 46px;
+      height: 46px;
       border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
+      border-radius: 14px;
+      background: var(--card);
+      display: grid;
+      place-items: center;
       box-shadow: var(--shadow);
     }
 
-    .composer {
+    .menu-lines {
+      width: 18px;
       display: grid;
-      gap: 10px;
+      gap: 4px;
     }
 
-    .composer label,
-    .section-title {
+    .menu-lines span {
       display: block;
-      margin: 0 0 10px;
-      font-size: 0.95rem;
-      font-weight: 700;
+      height: 2px;
+      border-radius: 999px;
+      background: var(--text);
     }
 
-    .composer input[type="text"] {
-      width: 100%;
-      padding: 14px 16px;
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 22px 18px;
       border: 1px solid var(--border);
-      border-radius: 999px;
-      background: var(--surface);
+      border-radius: 28px;
+      background:
+        linear-gradient(145deg, rgba(255, 45, 45, 0.12), transparent 35%),
+        linear-gradient(180deg, #131313 0%, #0f0f0f 100%);
+      box-shadow: var(--shadow);
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: auto -60px -80px auto;
+      width: 220px;
+      height: 220px;
+      background: none;
+    }
+
+    .hero-copy {
+      position: relative;
+      z-index: 1;
+      width: calc(100% - 198px);
+      min-height: 140px;
+    }
+
+    .hero-food-wrapper {
+      position: absolute;
+      right: -10px;
+      top: 10px;
+      width: 260px;
+    }
+
+    .hero-food-wrapper::before {
+      content: "";
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 240px;
+      height: 240px;
+      background: radial-gradient(circle at center,
+          rgba(255, 0, 0, 0.5) 0%,
+          rgba(255, 0, 0, 0.3) 25%,
+          rgba(255, 0, 0, 0.15) 45%,
+          transparent 70%
+      );
+      filter: blur(8px);
+      opacity: 0.8;
+      z-index: 0;
+    }
+
+    .hero-food-wrapper::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 20px;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle,
+          rgba(255,0,0,0.7) 0%,
+          rgba(255,0,0,0.4) 30%,
+          transparent 65%
+      );
+      opacity: 0.6;
+      filter: contrast(120%);
+      z-index: 0;
+    }
+
+    .hero-food {
+      position: relative;
+      width: 100%;
+      border-radius: 20px;
+      z-index: 1;
+      filter: drop-shadow(0 15px 40px rgba(0,0,0,0.7));
+    }
+
+    .hero-kicker,
+    .hero-main {
+      margin: 0;
+      line-height: 0.92;
+      text-transform: uppercase;
+    }
+
+    .hero-kicker {
       color: var(--text);
+      font-size: clamp(2rem, 10vw, 3rem);
+      font-weight: 900;
+      letter-spacing: -0.04em;
+    }
+
+    .hero-main {
+      margin-top: 8px;
+      color: var(--primary);
+      font-size: clamp(2.35rem, 13vw, 3.9rem);
+      font-weight: 1000;
+      font-style: italic;
+      letter-spacing: -0.05em;
+    }
+
+    .hero-underline {
+      width: 72px;
+      height: 4px;
+      margin-top: 14px;
+      border-radius: var(--radius-pill);
+      background: linear-gradient(90deg, var(--accent), var(--primary));
+    }
+
+    .search-wrap {
+      margin-top: 18px;
+      display: flex;
+      gap: 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    .search-wrap input[type="text"] {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid #323232;
+      border-right: 0;
+      border-radius: 16px 0 0 16px;
+      background: #181818;
+      color: var(--text);
+      padding: 16px 18px;
       font-size: 1rem;
       outline: none;
-      transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
     }
 
-    .composer input[type="text"]:focus {
-      border-color: rgba(217, 108, 61, 0.55);
-      box-shadow: 0 0 0 4px rgba(217, 108, 61, 0.12);
+    .search-wrap input[type="text"]::placeholder {
+      color: #7e7e7e;
     }
 
-    .composer button {
+    .search-wrap button {
+      flex: 0 0 62px;
       border: 0;
-      border-radius: 999px;
-      padding: 14px 18px;
-      background: var(--accent);
-      color: #fff;
-      font-size: 1rem;
-      font-weight: 700;
+      border-radius: 0 16px 16px 0;
+      background: linear-gradient(180deg, #ff3b30 0%, var(--primary) 100%);
+      color: white;
+      font-size: 1.35rem;
+      font-weight: 900;
       cursor: pointer;
-      transition: transform 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
-      box-shadow: 0 10px 18px rgba(217, 108, 61, 0.22);
+      box-shadow: 0 12px 22px rgba(255, 45, 45, 0.25);
+      transition: transform 0.18s ease, filter 0.18s ease;
     }
 
-    .composer button:hover,
-    .composer button:focus-visible {
-      background: var(--accent-strong);
+    .search-wrap button:hover,
+    .search-wrap button:focus-visible {
       transform: translateY(-1px);
+      filter: brightness(1.06);
     }
 
-    .reply-card p {
+    .quick-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .quick-card {
+      padding: 14px 10px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+      text-align: left;
+    }
+
+    .quick-icon {
+      width: 42px;
+      height: 42px;
+      margin-bottom: 12px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 45, 45, 0.3);
+      display: grid;
+      place-items: center;
+      color: var(--primary);
+      font-size: 1.25rem;
+    }
+
+    .quick-card h3 {
+      margin: 0 0 6px;
+      font-size: 1rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .quick-card p {
       margin: 0;
-      line-height: 1.6;
+      font-size: 0.84rem;
+      line-height: 1.35;
+      color: var(--muted);
+    }
+
+    .stack {
+      display: grid;
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+
+    .section-title {
+      margin: 0 0 12px;
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .assistant-text {
+      margin: 0;
+      color: #f5f5f5;
+      line-height: 1.65;
       white-space: pre-line;
     }
 
-    .block-card {
-      margin-top: 14px;
-      padding: 14px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
+    .card-subtle {
+      background: var(--card-soft);
     }
 
     .ad-card {
-      background: #fff6eb;
+      border-color: rgba(255, 45, 45, 0.18);
+      background: linear-gradient(180deg, #1b1414 0%, #171717 100%);
+    }
+
+    .ad-food {
+      margin: 14px 0 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      color: white;
+    }
+
+    .ad-food:first-of-type {
+      margin-top: 0;
     }
 
     .list-clean,
     .recipe-list {
       margin: 0;
       padding-left: 20px;
+      color: #e8e8e8;
     }
 
     .list-clean li,
     .recipe-list li {
       margin: 8px 0;
       line-height: 1.5;
+    }
+
+    .ad-card a {
+      color: #ff8c42;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .ad-card a:hover,
+    .ad-card a:focus-visible {
+      color: #ffb067;
+      text-decoration: underline;
     }
 
     .checklist {
@@ -154,66 +364,96 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 10px 12px;
-      border-radius: 14px;
-      background: #fff;
-      border: 1px solid var(--border);
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: #121212;
+      border: 1px solid #292929;
+      color: #f2f2f2;
     }
 
     .check-item input {
       width: 18px;
       height: 18px;
-      accent-color: var(--accent);
+      accent-color: var(--primary);
       flex: 0 0 auto;
     }
 
-    .ad-food {
-      margin: 14px 0 8px;
-      font-weight: 700;
-    }
-
-    .ad-food:first-of-type {
-      margin-top: 0;
-    }
-
-    @media (max-width: 480px) {
-      .app-shell {
-        padding: 18px 12px 32px;
+    @media (max-width: 390px) {
+      .hero-copy {
+        width: calc(100% - 160px);
       }
 
-      .card {
-        padding: 16px;
+      .hero-food-wrapper {
+        width: 210px;
+        right: -24px;
       }
     }
   </style>
 </head>
 <body>
-  <main class="app-shell">
-    <section class="hero">
-      <h1>TasteBuds is alive 😏</h1>
-      <p>Quick cravings, easy picks, zero fuss.</p>
-    </section>
+  <main class="app">
+    <header class="topbar">
+      <img src="{{ url_for('static', filename='logo.png') }}" class="logo-img" alt="TasteBuds logo">
+      <div class="menu-btn" aria-label="Menu">
+        <div class="menu-lines" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+    </header>
 
-    <section class="card">
-      <form method="post" class="composer">
-        <label for="message">What you in the mood for?</label>
+    <section class="hero">
+      <div class="hero-food-wrapper">
+        <img src="{{ url_for('static', filename='food.png') }}" class="hero-food" alt="Food photography">
+      </div>
+      <div class="hero-copy">
+        <p class="hero-kicker">What are you</p>
+        <p class="hero-main">Craving?</p>
+        <div class="hero-underline"></div>
+      </div>
+
+      <form method="post" class="search-wrap">
         <input
           type="text"
           id="message"
           name="message"
-          placeholder="Type something..."
+          placeholder="e.g. spicy chicken, sushi, burgers..."
           required
         >
-        <button type="submit">Send</button>
+        <button type="submit" aria-label="Search">⌕</button>
       </form>
     </section>
 
-    {% if assistant_reply %}
-    <section class="card reply-card">
-      <p><strong>TasteBuds:</strong> {{ assistant_reply }}</p>
+    <section class="quick-row">
+      <article class="quick-card">
+        <div class="quick-icon">⌕</div>
+        <h3>Find It</h3>
+        <p>Discover the best near you.</p>
+      </article>
+      <article class="quick-card">
+        <div class="quick-icon">👜</div>
+        <h3>Order It</h3>
+        <p>Fast delivery from your favorites.</p>
+      </article>
+      <article class="quick-card">
+        <div class="quick-icon">👨‍🍳</div>
+        <h3>Cook It</h3>
+        <p>Easy recipes step by step.</p>
+      </article>
+    </section>
+
+    {% if assistant_reply or ads or ingredients or grocery_list or recipe_steps %}
+    <section class="stack">
+      {% if assistant_reply %}
+      <article class="card">
+        <h2 class="section-title">TasteBuds</h2>
+        <p class="assistant-text">{{ assistant_reply }}</p>
+      </article>
+      {% endif %}
 
       {% if ads %}
-      <div class="block-card ad-card">
+      <article class="card ad-card">
         <h3 class="section-title">🔥 Order Now</h3>
         {% for ad in ads %}
           <p class="ad-food">{{ ad.food }}</p>
@@ -227,12 +467,12 @@
             {% endfor %}
           </ul>
         {% endfor %}
-      </div>
+      </article>
       {% endif %}
 
       {% if ingredients %}
-      <div class="block-card">
-        <p class="section-title">🛒 Ingredients Checklist</p>
+      <article class="card card-subtle">
+        <h3 class="section-title">🛒 Ingredients</h3>
         <div class="checklist">
           {% for ingredient in ingredients %}
           <label class="check-item">
@@ -241,29 +481,29 @@
           </label>
           {% endfor %}
         </div>
-      </div>
+      </article>
       {% endif %}
 
       {% if grocery_list %}
-      <div class="block-card">
-        <h3 class="section-title">🛒 Grocery List</h3>
+      <article class="card card-subtle">
+        <h3 class="section-title">🧾 Grocery List</h3>
         <ul class="list-clean">
           {% for item in grocery_list %}
             <li>{{ item }}</li>
           {% endfor %}
         </ul>
-      </div>
+      </article>
       {% endif %}
 
       {% if recipe_steps %}
-      <div class="block-card">
-        <p class="section-title">📖 Recipe</p>
+      <article class="card card-subtle">
+        <h3 class="section-title">📖 Recipe Steps</h3>
         <ol class="recipe-list">
           {% for step in recipe_steps %}
           <li>{{ step }}</li>
           {% endfor %}
         </ol>
-      </div>
+      </article>
       {% endif %}
     </section>
     {% endif %}

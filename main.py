@@ -41,11 +41,46 @@ FOOD_ADS = {
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "tastebuds-dev-secret")
 API_KEY = os.getenv("OPENAI_API_KEY")
+SYSTEM_PROMPT = """You are a food assistant that adapts to the user's tone.
+
+playful -> casual, slightly AAVE, friendly
+neutral -> clear and helpful
+direct -> concise
+
+Never use profanity.
+Never force slang.
+Keep responses natural.
+"""
+
+
+def detect_vibe(message):
+    lowered = message.lower().strip()
+    playful_markers = [
+        "tryna", "tho", "fr", "ngl", "lol", "lmao", "ima", "finna",
+        "bruh", "lowkey", "highkey", "idk", "yall", "ain't", "wanna",
+    ]
+    direct_markers = {"cook", "order", "hungry", "spicy", "salty", "sweet", "show more"}
+
+    if any(marker in lowered for marker in playful_markers):
+        return "playful"
+    if len(lowered.split()) <= 2 or lowered in direct_markers:
+        return "direct"
+    return "neutral"
+
+
+def build_tone_prompt(prompt, vibe):
+    return (
+        f"{SYSTEM_PROMPT}\n\n"
+        f"User vibe: {vibe}.\n"
+        f"User message: {prompt}"
+    )
 
 
 def generate_reply(prompt):
     if not API_KEY:
         return ""
+
+    vibe = detect_vibe(prompt)
 
     response = requests.post(
         "https://api.openai.com/v1/chat/completions",
@@ -55,7 +90,10 @@ def generate_reply(prompt):
         },
         json={
             "model": "gpt-4o-mini",
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": build_tone_prompt(prompt, vibe)},
+            ],
         },
         timeout=30,
     )

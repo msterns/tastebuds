@@ -291,7 +291,9 @@ def get_suggestions_reply(taste, show_more=False):
         parsed_options = fallback_options
         suggestions = format_suggestions(parsed_options)
     else:
-        suggestions = f"{suggestions}\n\n{suggestion_footer()}"
+        footer = suggestion_footer()
+        if footer not in suggestions:
+            suggestions = f"{suggestions}\n\n{footer}"
 
     session["food_options"] = parsed_options
     session["ads"] = get_ads_for_options(parsed_options)
@@ -300,12 +302,16 @@ def get_suggestions_reply(taste, show_more=False):
     session["user_location"] = ""
     session["grocery_list"] = []
     session["recipe_steps"] = []
-    session["stage"] = "choose_food"
     return suggestions
 
 
 def normalize_choice(text):
     return re.sub(r"[^a-z0-9 ]", "", text.lower()).strip()
+
+
+def debug_log(label, value):
+    safe_text = str(value).encode("ascii", "backslashreplace").decode("ascii")
+    print(f"{label}: {safe_text}")
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -341,6 +347,7 @@ def index():
     elif lowered == "show more":
         if saved_taste:
             assistant_reply = get_suggestions_reply(saved_taste, show_more=True)
+            session["stage"] = "choose_food"
         else:
             assistant_reply = (
                 "What your taste buds saying tho? Sweet, salty, spicy, comfort?"
@@ -348,10 +355,20 @@ def index():
             session["stage"] = "ask_taste"
     elif stage == "start":
         session["taste_preference"] = user_message
-        assistant_reply = get_suggestions_reply(user_message)
+
+        ai_reply = safe_generate_reply(
+            user_message,
+            "Tell me what you craving 😏"
+        )
+
+        suggestions = get_suggestions_reply(user_message)
+
+        assistant_reply = f"{ai_reply}\n\n{suggestions}"
+        session["stage"] = "choose_food"
     elif stage == "ask_taste":
         session["taste_preference"] = user_message
         assistant_reply = get_suggestions_reply(user_message)
+        session["stage"] = "choose_food"
     elif lowered == "cook":
         if selected_food:
             cook_plan = get_cook_plan(selected_food)
@@ -417,8 +434,8 @@ def index():
         )
         session["stage"] = "ask_taste"
 
-    print(f"user_input: {user_message}")
-    print(f"assistant_reply: {assistant_reply}")
+    debug_log("user_input", user_message)
+    debug_log("assistant_reply", assistant_reply)
     session["assistant_reply"] = assistant_reply
 
     return render_template(

@@ -347,10 +347,8 @@ def index():
             )
             session["stage"] = "ask_taste"
     elif stage == "start":
-        assistant_reply = (
-            "What your taste buds saying tho? Sweet, salty, spicy, comfort?"
-        )
-        session["stage"] = "ask_taste"
+        session["taste_preference"] = user_message
+        assistant_reply = get_suggestions_reply(user_message)
     elif stage == "ask_taste":
         session["taste_preference"] = user_message
         assistant_reply = get_suggestions_reply(user_message)
@@ -419,6 +417,8 @@ def index():
         )
         session["stage"] = "ask_taste"
 
+    print(f"user_input: {user_message}")
+    print(f"assistant_reply: {assistant_reply}")
     session["assistant_reply"] = assistant_reply
 
     return render_template(

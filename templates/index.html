@@ -430,16 +430,27 @@
       </article>
     </section>
 
-    {% if assistant_reply or ads or ingredients or grocery_list or recipe_steps %}
+    <section class="card">
+      <form method="post" action="/" class="search-wrap">
+        <input
+          type="text"
+          id="message"
+          name="user_input"
+          placeholder="Type something..."
+          required
+        >
+        <button type="submit" aria-label="Send">⌕</button>
+      </form>
+    </section>
+
+    {% if response %}
     <section class="stack">
-      {% if assistant_reply %}
       <article class="card">
         <h2 class="section-title">TasteBuds</h2>
-        <p class="assistant-text">{{ assistant_reply }}</p>
+        <p class="assistant-text">{{ response }}</p>
       </article>
-      {% endif %}
 
-      {% if ads %}
+      {% if show_results and ads %}
       <article class="card ad-card">
         <h3 class="section-title">🔥 Order Now</h3>
         {% for ad in ads %}
@@ -457,7 +468,7 @@
       </article>
       {% endif %}
 
-      {% if ingredients %}
+      {% if show_results and ingredients %}
       <article class="card card-subtle">
         <h3 class="section-title">🛒 Ingredients</h3>
         <div class="checklist">
@@ -471,7 +482,7 @@
       </article>
       {% endif %}
 
-      {% if grocery_list %}
+      {% if show_results and grocery_list %}
       <article class="card card-subtle">
         <h3 class="section-title">🧾 Grocery List</h3>
         <ul class="list-clean">
@@ -482,7 +493,7 @@
       </article>
       {% endif %}
 
-      {% if recipe_steps %}
+      {% if show_results and recipe_steps %}
       <article class="card card-subtle">
         <h3 class="section-title">📖 Recipe Steps</h3>
         <ol class="recipe-list">
@@ -494,19 +505,6 @@
       {% endif %}
     </section>
     {% endif %}
-
-    <section class="card">
-      <form method="post" action="/" class="search-wrap">
-        <input
-          type="text"
-          id="message"
-          name="user_input"
-          placeholder="Type something..."
-          required
-        >
-        <button type="submit" aria-label="Send">⌕</button>
-      </form>
-    </section>
   </main>
 </body>
 </html>

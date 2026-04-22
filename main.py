@@ -310,111 +310,121 @@ def normalize_choice(text):
 
 @app.route("/", methods=["GET", "POST"])
 def index():
+    if request.method == "GET":
+        return render_template(
+            "index.html",
+            response=None,
+            show_results=False,
+            ads=[],
+            ingredients=[],
+            recipe_steps=[],
+            grocery_list=[],
+        )
+
     assistant_reply = session.get("assistant_reply", "")
+    user_message = request.form.get("message") or request.form.get("user_input", "")
+    user_message = user_message.strip()
+    lowered = user_message.lower()
+    stage = session.get("stage", "start")
+    saved_taste = session.get("taste_preference", "")
+    selected_food = session.get("selected_food", "")
+    food_options = session.get("food_options", [])
 
-    if request.method == "POST":
-        user_message = request.form.get("message") or request.form.get("user_input", "")
-        user_message = user_message.strip()
-        lowered = user_message.lower()
-        stage = session.get("stage", "start")
-        saved_taste = session.get("taste_preference", "")
-        selected_food = session.get("selected_food", "")
-        food_options = session.get("food_options", [])
+    if lowered != "cook":
+        session["ingredients"] = []
+        session["user_location"] = ""
+        session["grocery_list"] = []
+        session["recipe_steps"] = []
 
-        if lowered != "cook":
-            session["ingredients"] = []
-            session["user_location"] = ""
-            session["grocery_list"] = []
-            session["recipe_steps"] = []
-
-        if not user_message:
-            assistant_reply = "Say a craving and I got you."
-        elif lowered == "show more":
-            if saved_taste:
-                assistant_reply = get_suggestions_reply(saved_taste, show_more=True)
-            else:
-                assistant_reply = (
-                    "What your taste buds saying tho? Sweet, salty, spicy, comfort?"
-                )
-                session["stage"] = "ask_taste"
-        elif stage == "start":
+    if not user_message:
+        assistant_reply = "Say a craving and I got you."
+    elif lowered == "show more":
+        if saved_taste:
+            assistant_reply = get_suggestions_reply(saved_taste, show_more=True)
+        else:
             assistant_reply = (
                 "What your taste buds saying tho? Sweet, salty, spicy, comfort?"
             )
             session["stage"] = "ask_taste"
-        elif stage == "ask_taste":
-            session["taste_preference"] = user_message
-            assistant_reply = get_suggestions_reply(user_message)
-        elif lowered == "cook":
-            if selected_food:
-                cook_plan = get_cook_plan(selected_food)
+    elif stage == "start":
+        assistant_reply = (
+            "What your taste buds saying tho? Sweet, salty, spicy, comfort?"
+        )
+        session["stage"] = "ask_taste"
+    elif stage == "ask_taste":
+        session["taste_preference"] = user_message
+        assistant_reply = get_suggestions_reply(user_message)
+    elif lowered == "cook":
+        if selected_food:
+            cook_plan = get_cook_plan(selected_food)
 
-                assistant_reply = cook_plan["intro"]
+            assistant_reply = cook_plan["intro"]
 
-                # Store recipe data
-                session["ingredients"] = cook_plan["ingredients"]
-                session["recipe_steps"] = cook_plan["steps"]
+            # Store recipe data
+            session["ingredients"] = cook_plan["ingredients"]
+            session["recipe_steps"] = cook_plan["steps"]
 
-                # NEW: grocery list (same as ingredients for now)
-                session["grocery_list"] = cook_plan["ingredients"]
-
-                session["stage"] = "done"
-            else:
-                assistant_reply = "Pick one first or say 'show more' 👀"
-                session["stage"] = "choose_food"
-        elif lowered == "order":
-            if selected_food:
-                if not session.get("user_location"):
-                    assistant_reply = "Where you at? Drop a city or zip 😏"
-                    session["stage"] = "ask_location"
-                else:
-                    assistant_reply = get_location_restaurants(
-                        selected_food,
-                        session.get("user_location")
-                    )
-                    session["stage"] = "done"
-            else:
-                assistant_reply = "Pick one first or say 'show more' 👀"
-                session["stage"] = "choose_food"
-        elif stage == "ask_location":
-            session["user_location"] = user_message
-
-            # generate restaurant suggestions
-            assistant_reply = get_location_restaurants(
-                session.get("selected_food", ""),
-                user_message
-            )
+            # NEW: grocery list (same as ingredients for now)
+            session["grocery_list"] = cook_plan["ingredients"]
 
             session["stage"] = "done"
-        elif stage == "choose_food":
-            normalized_message = normalize_choice(user_message)
-            matched_option = next(
-                (
-                    option
-                    for option in food_options
-                    if normalize_choice(option) == normalized_message
-                ),
-                "",
-            )
-            if matched_option:
-                session["selected_food"] = matched_option
-                assistant_reply = "Bet 😏 you tryna cook or order?"
-                session["stage"] = "choose_mode"
-            else:
-                assistant_reply = "Pick one from the list or say 'show more' 👀"
-        elif stage == "choose_mode":
-            assistant_reply = "Say 'cook' or 'order' 😏"
         else:
-            assistant_reply = (
-                "If you want another round, throw me a new craving and we can run it back."
-            )
-            session["stage"] = "ask_taste"
+            assistant_reply = "Pick one first or say 'show more' 👀"
+            session["stage"] = "choose_food"
+    elif lowered == "order":
+        if selected_food:
+            if not session.get("user_location"):
+                assistant_reply = "Where you at? Drop a city or zip 😏"
+                session["stage"] = "ask_location"
+            else:
+                assistant_reply = get_location_restaurants(
+                    selected_food,
+                    session.get("user_location")
+                )
+                session["stage"] = "done"
+        else:
+            assistant_reply = "Pick one first or say 'show more' 👀"
+            session["stage"] = "choose_food"
+    elif stage == "ask_location":
+        session["user_location"] = user_message
 
-        session["assistant_reply"] = assistant_reply
+        # generate restaurant suggestions
+        assistant_reply = get_location_restaurants(
+            session.get("selected_food", ""),
+            user_message
+        )
+
+        session["stage"] = "done"
+    elif stage == "choose_food":
+        normalized_message = normalize_choice(user_message)
+        matched_option = next(
+            (
+                option
+                for option in food_options
+                if normalize_choice(option) == normalized_message
+            ),
+            "",
+        )
+        if matched_option:
+            session["selected_food"] = matched_option
+            assistant_reply = "Bet 😏 you tryna cook or order?"
+            session["stage"] = "choose_mode"
+        else:
+            assistant_reply = "Pick one from the list or say 'show more' 👀"
+    elif stage == "choose_mode":
+        assistant_reply = "Say 'cook' or 'order' 😏"
+    else:
+        assistant_reply = (
+            "If you want another round, throw me a new craving and we can run it back."
+        )
+        session["stage"] = "ask_taste"
+
+    session["assistant_reply"] = assistant_reply
 
     return render_template(
         "index.html",
-        assistant_reply=assistant_reply,
+        response=assistant_reply,
+        show_results=True,
         ingredients=session.get("ingredients", []),
         recipe_steps=session.get("recipe_steps", []),
         grocery_list=session.get("grocery_list", []),

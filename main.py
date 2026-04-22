@@ -76,7 +76,18 @@ def build_tone_prompt(prompt, vibe):
     )
 
 
+def masked_api_key():
+    if not API_KEY:
+        return ""
+    if len(API_KEY) <= 8:
+        return "*" * len(API_KEY)
+    return f"{API_KEY[:7]}...{API_KEY[-4:]}"
+
+
 def generate_reply(prompt):
+    debug_log("API KEY", masked_api_key())
+    debug_log("CALLING OPENAI", prompt)
+
     if not API_KEY:
         return ""
 
@@ -97,7 +108,7 @@ def generate_reply(prompt):
         },
         timeout=30,
     )
-    print(response.json())
+    debug_log("OPENAI RESPONSE", response.json())
     response.raise_for_status()
     return response.json()["choices"][0]["message"]["content"]
 
@@ -106,9 +117,11 @@ def safe_generate_reply(prompt, fallback):
     try:
         reply = generate_reply(prompt)
         return reply or fallback
-    except requests.RequestException:
+    except requests.RequestException as exc:
+        debug_log("OPENAI ERROR", exc)
         return fallback
-    except (KeyError, IndexError, TypeError, ValueError):
+    except (KeyError, IndexError, TypeError, ValueError) as exc:
+        debug_log("OPENAI PARSE ERROR", exc)
         return fallback
 
 

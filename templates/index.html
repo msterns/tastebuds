@@ -197,11 +197,9 @@
     }
 
     .search-wrap {
-      margin-top: 18px;
       display: flex;
       gap: 0;
       position: relative;
-      z-index: 1;
     }
 
     .search-wrap input[type="text"] {
@@ -412,17 +410,6 @@
         <p class="hero-main">Craving?</p>
         <div class="hero-underline"></div>
       </div>
-
-      <form method="post" class="search-wrap">
-        <input
-          type="text"
-          id="message"
-          name="message"
-          placeholder="e.g. spicy chicken, sushi, burgers..."
-          required
-        >
-        <button type="submit" aria-label="Search">⌕</button>
-      </form>
     </section>
 
     <section class="quick-row">
@@ -507,6 +494,19 @@
       {% endif %}
     </section>
     {% endif %}
+
+    <section class="card">
+      <form method="post" action="/" class="search-wrap">
+        <input
+          type="text"
+          id="message"
+          name="user_input"
+          placeholder="Type something..."
+          required
+        >
+        <button type="submit" aria-label="Send">⌕</button>
+      </form>
+    </section>
   </main>
 </body>
 </html>

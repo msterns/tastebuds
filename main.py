@@ -313,7 +313,8 @@ def index():
     assistant_reply = session.get("assistant_reply", "")
 
     if request.method == "POST":
-        user_message = request.form.get("message", "").strip()
+        user_message = request.form.get("message") or request.form.get("user_input", "")
+        user_message = user_message.strip()
         lowered = user_message.lower()
         stage = session.get("stage", "start")
         saved_taste = session.get("taste_preference", "")

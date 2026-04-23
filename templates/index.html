@@ -1,4 +1,3 @@
-<h1 style="color:red;">NEW VERSION TEST</h1>
 <!doctype html>
 <html lang="en">
 <head>
@@ -100,15 +99,6 @@
       box-shadow: var(--shadow);
     }
 
-    .hero::before {
-      content: "";
-      position: absolute;
-      inset: auto -60px -80px auto;
-      width: 220px;
-      height: 220px;
-      background: none;
-    }
-
     .hero-copy {
       position: relative;
       z-index: 1;
@@ -134,8 +124,7 @@
           rgba(255, 0, 0, 0.5) 0%,
           rgba(255, 0, 0, 0.3) 25%,
           rgba(255, 0, 0, 0.15) 45%,
-          transparent 70%
-      );
+          transparent 70%);
       filter: blur(8px);
       opacity: 0.8;
       z-index: 0;
@@ -149,10 +138,9 @@
       width: 200px;
       height: 200px;
       background: radial-gradient(circle,
-          rgba(255,0,0,0.7) 0%,
-          rgba(255,0,0,0.4) 30%,
-          transparent 65%
-      );
+          rgba(255, 0, 0, 0.7) 0%,
+          rgba(255, 0, 0, 0.4) 30%,
+          transparent 65%);
       opacity: 0.6;
       filter: contrast(120%);
       z-index: 0;
@@ -163,7 +151,7 @@
       width: 100%;
       border-radius: 20px;
       z-index: 1;
-      filter: drop-shadow(0 15px 40px rgba(0,0,0,0.7));
+      filter: drop-shadow(0 15px 40px rgba(0, 0, 0, 0.7));
     }
 
     .hero-kicker,
@@ -197,116 +185,136 @@
       background: linear-gradient(90deg, var(--accent), var(--primary));
     }
 
-    .search-wrap {
-      display: flex;
-      gap: 0;
-      position: relative;
+    .chat-container {
+      display: grid;
+      gap: 14px;
+      margin-top: 18px;
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      background: linear-gradient(180deg, rgba(26, 26, 26, 0.98), rgba(18, 18, 18, 0.98));
+      box-shadow: var(--shadow);
     }
 
-    .search-wrap input[type="text"] {
+    .chat-header {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #ffd8d8;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .chat-messages {
+      display: grid;
+      gap: 12px;
+      min-height: 84px;
+    }
+
+    .chat-bubble {
+      max-width: 88%;
+      padding: 14px 16px;
+      border-radius: 18px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-break: break-word;
+      box-shadow: 0 10px 18px rgba(0, 0, 0, 0.22);
+    }
+
+    .chat-bubble.assistant {
+      justify-self: start;
+      background: #1e1e1e;
+      border: 1px solid #2b2b2b;
+      color: var(--text);
+      border-top-left-radius: 8px;
+    }
+
+    .chat-bubble.user {
+      justify-self: end;
+      background: linear-gradient(180deg, #ff3b30 0%, var(--primary) 100%);
+      color: white;
+      border-top-right-radius: 8px;
+    }
+
+    .chat-input {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      background: rgba(18, 18, 18, 0.98);
+      box-shadow: var(--shadow);
+    }
+
+    .chat-input input[type="text"] {
       width: 100%;
       min-width: 0;
       border: 1px solid #323232;
-      border-right: 0;
-      border-radius: 16px 0 0 16px;
+      border-radius: 16px;
       background: #181818;
       color: var(--text);
-      padding: 16px 18px;
+      padding: 15px 16px;
       font-size: 1rem;
       outline: none;
     }
 
-    .search-wrap input[type="text"]::placeholder {
+    .chat-input input[type="text"]::placeholder {
       color: #7e7e7e;
     }
 
-    .search-wrap button {
-      flex: 0 0 62px;
+    .chat-input button {
+      flex: 0 0 auto;
+      min-width: 82px;
       border: 0;
-      border-radius: 0 16px 16px 0;
+      border-radius: 16px;
       background: linear-gradient(180deg, #ff3b30 0%, var(--primary) 100%);
       color: white;
-      font-size: 1.35rem;
-      font-weight: 900;
+      font-size: 0.98rem;
+      font-weight: 800;
       cursor: pointer;
       box-shadow: 0 12px 22px rgba(255, 45, 45, 0.25);
       transition: transform 0.18s ease, filter 0.18s ease;
     }
 
-    .search-wrap button:hover,
-    .search-wrap button:focus-visible {
+    .chat-input button:hover,
+    .chat-input button:focus-visible,
+    .pill-button:hover,
+    .pill-button:focus-visible,
+    .subtle-button:hover,
+    .subtle-button:focus-visible,
+    .option-link:hover,
+    .option-link:focus-visible,
+    .buy-link:hover,
+    .buy-link:focus-visible {
       transform: translateY(-1px);
       filter: brightness(1.06);
     }
 
-    .quick-row {
+    .option-buttons,
+    .stack,
+    .action-grid,
+    .checklist {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .option-buttons {
+      display: flex;
+      flex-wrap: wrap;
       gap: 10px;
       margin-top: 16px;
     }
 
-    .quick-card {
-      padding: 14px 10px;
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      background: var(--card);
-      box-shadow: var(--shadow);
-      text-align: left;
-    }
-
-    .quick-icon {
-      width: 42px;
-      height: 42px;
-      margin-bottom: 12px;
-      border-radius: 50%;
-      border: 1px solid rgba(255, 45, 45, 0.3);
-      display: grid;
-      place-items: center;
-      color: var(--primary);
-      font-size: 1.25rem;
-    }
-
-    .quick-card h3 {
-      margin: 0 0 6px;
-      font-size: 1rem;
-      font-weight: 800;
-      text-transform: uppercase;
-    }
-
-    .quick-card p {
-      margin: 0;
-      font-size: 0.84rem;
-      line-height: 1.35;
-      color: var(--muted);
-    }
-
     .stack {
-      display: grid;
-      gap: 14px;
       margin-top: 18px;
     }
 
     .card {
-      background: var(--card);
+      padding: 18px;
       border: 1px solid var(--border);
       border-radius: var(--radius-xl);
+      background: var(--card);
       box-shadow: var(--shadow);
-      padding: 18px;
-    }
-
-    .section-title {
-      margin: 0 0 12px;
-      font-size: 1rem;
-      font-weight: 800;
-      color: var(--text);
-    }
-
-    .assistant-text {
-      margin: 0;
-      color: #f5f5f5;
-      line-height: 1.65;
-      white-space: pre-line;
     }
 
     .card-subtle {
@@ -314,72 +322,33 @@
     }
 
     .ad-card {
-      border-color: rgba(255, 45, 45, 0.18);
-      background: linear-gradient(180deg, #1b1414 0%, #171717 100%);
+      border-color: rgba(255, 122, 0, 0.26);
+      background: linear-gradient(180deg, rgba(255, 122, 0, 0.09), rgba(26, 26, 26, 0.96));
+    }
+
+    .section-title {
+      margin: 0 0 12px;
+      font-size: 1.02rem;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+    }
+
+    .assistant-text,
+    .helper-text,
+    .ad-food {
+      margin: 0;
+      line-height: 1.6;
+    }
+
+    .assistant-text,
+    .helper-text {
+      color: var(--muted);
     }
 
     .ad-food {
-      margin: 14px 0 8px;
-      font-size: 1rem;
+      margin-top: 12px;
       font-weight: 700;
-      color: white;
-    }
-
-    .ad-food:first-of-type {
-      margin-top: 0;
-    }
-
-    .list-clean,
-    .recipe-list {
-      margin: 0;
-      padding-left: 20px;
-      color: #e8e8e8;
-    }
-
-    .list-clean li,
-    .recipe-list li {
-      margin: 8px 0;
-      line-height: 1.5;
-    }
-
-    .ad-card a {
-      color: #ff8c42;
-      text-decoration: none;
-      font-weight: 600;
-    }
-
-    .ad-card a:hover,
-    .ad-card a:focus-visible {
-      color: #ffb067;
-      text-decoration: underline;
-    }
-
-    .checklist {
-      display: grid;
-      gap: 10px;
-    }
-
-    .check-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 12px 14px;
-      border-radius: 16px;
-      background: #121212;
-      border: 1px solid #292929;
-      color: #f2f2f2;
-    }
-
-    .check-item input {
-      width: 18px;
-      height: 18px;
-      accent-color: var(--primary);
-      flex: 0 0 auto;
-    }
-
-    .action-grid {
-      display: grid;
-      gap: 10px;
+      color: #ffe9d6;
     }
 
     .pill-form {
@@ -389,32 +358,62 @@
     .pill-button,
     .subtle-button {
       width: 100%;
-      border: 1px solid rgba(255, 45, 45, 0.26);
+      border: 0;
       border-radius: 16px;
-      background: #171717;
-      color: var(--text);
-      padding: 13px 14px;
-      text-align: left;
+      padding: 13px 16px;
+      font-size: 0.95rem;
+      font-weight: 700;
       cursor: pointer;
-      transition: transform 0.18s ease, border-color 0.18s ease;
+      transition: transform 0.18s ease, filter 0.18s ease;
     }
 
-    .pill-button:hover,
-    .subtle-button:hover,
-    .pill-button:focus-visible,
-    .subtle-button:focus-visible {
-      transform: translateY(-1px);
-      border-color: rgba(255, 45, 45, 0.58);
+    .pill-button {
+      background: linear-gradient(180deg, #ff3b30 0%, var(--primary) 100%);
+      color: white;
+      box-shadow: 0 12px 22px rgba(255, 45, 45, 0.24);
     }
 
     .subtle-button {
-      text-align: center;
-      background: #111;
+      background: #252525;
+      color: var(--text);
+      border: 1px solid #343434;
+    }
+
+    .list-clean,
+    .recipe-list {
+      margin: 0;
+      padding-left: 20px;
+      line-height: 1.7;
+      color: var(--text);
+    }
+
+    .list-clean a {
+      color: #ffd0d0;
+      text-decoration: none;
+    }
+
+    .list-clean a:hover,
+    .list-clean a:focus-visible {
+      text-decoration: underline;
+    }
+
+    .check-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: #121212;
+      border: 1px solid #2a2a2a;
+    }
+
+    .check-item input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--primary);
     }
 
     .option-card {
-      display: grid;
-      gap: 10px;
       padding: 14px;
       border-radius: 18px;
       background: #141414;
@@ -429,6 +428,7 @@
     .option-actions {
       display: grid;
       gap: 8px;
+      margin-top: 10px;
     }
 
     .option-link {
@@ -441,12 +441,7 @@
       color: white;
       text-decoration: none;
       font-weight: 700;
-    }
-
-    .helper-text {
-      margin: 0 0 10px;
-      color: var(--muted);
-      line-height: 1.5;
+      transition: transform 0.18s ease, filter 0.18s ease;
     }
 
     .buy-link {
@@ -460,17 +455,7 @@
       text-decoration: none;
       font-weight: 700;
       text-align: center;
-    }
-
-    .buy-link:hover,
-    .buy-link:focus-visible {
-      border-color: rgba(255, 122, 0, 0.48);
-      filter: brightness(1.04);
-    }
-
-    .chat-history {
-      display: grid;
-      gap: 12px;
+      transition: transform 0.18s ease, filter 0.18s ease;
     }
 
     @media (max-width: 390px) {
@@ -481,6 +466,14 @@
       .hero-food-wrapper {
         width: 210px;
         right: -24px;
+      }
+
+      .chat-input {
+        flex-direction: column;
+      }
+
+      .chat-input button {
+        width: 100%;
       }
     }
   </style>
@@ -509,170 +502,151 @@
       </div>
     </section>
 
-    <section class="quick-row">
-      <article class="quick-card">
-        <div class="quick-icon">⌕</div>
-        <h3>Find It</h3>
-        <p>Discover the best near you.</p>
-      </article>
-      <article class="quick-card">
-        <div class="quick-icon">👜</div>
-        <h3>Order It</h3>
-        <p>Fast delivery from your favorites.</p>
-      </article>
-      <article class="quick-card">
-        <div class="quick-icon">👨‍🍳</div>
-        <h3>Cook It</h3>
-        <p>Easy recipes step by step.</p>
-      </article>
-    </section>
-
-    <section class="card">
-      <form method="post" action="/" class="search-wrap">
-        <input
-          type="text"
-          id="message"
-          name="user_input"
-          placeholder="Type something..."
-          required
-        >
-        <button type="submit" aria-label="Send">⌕</button>
-      </form>
-    </section>
-
-    {% if response %}
-    <section class="stack">
-      <article class="card">
-        <h2 class="section-title">TasteBuds</h2>
-        <div class="chat-history">
-          {% for message in response %}
-            {% if message.role == "assistant" %}
-            <p class="assistant-text">{{ message.content }}</p>
-            {% endif %}
-          {% endfor %}
-        </div>
-      </article>
-
-      {% if show_results and option_mode == "cook" and food_options %}
-      <article class="card card-subtle">
-        <h3 class="section-title">Cook Picks</h3>
-        <p class="helper-text">Tap a dish and I’ll build the cook plan.</p>
-        <div class="action-grid">
-          {% for food in food_options %}
-          <form method="post" action="/" class="pill-form">
-            <input type="hidden" name="action" value="pick_cook_food">
-            <input type="hidden" name="food" value="{{ food }}">
-            <button type="submit" class="pill-button">{{ food }}</button>
-          </form>
-          {% endfor %}
-        </div>
-      </article>
-      {% endif %}
-
-      {% if show_results and option_mode == "order" and order_options %}
-      <article class="card ad-card">
-        <h3 class="section-title">Order Picks</h3>
-        <p class="helper-text">Pick a delivery search or tap through for local spots.</p>
-        <div class="action-grid">
-          {% for option in order_options %}
-          <div class="option-card">
-            <h4>{{ option.food }}</h4>
-            <div class="option-actions">
-              <a class="option-link" href="{{ option.url }}" target="_blank">Order now</a>
-              <form method="post" action="/" class="pill-form">
-                <input type="hidden" name="action" value="see_more">
-                <input type="hidden" name="food" value="{{ option.food }}">
-                <button type="submit" class="subtle-button">See more</button>
-              </form>
-            </div>
-          </div>
-          {% endfor %}
-        </div>
-      </article>
-      {% endif %}
-
-      {% if show_results and local_spots_url %}
-      <article class="card card-subtle">
-        <h3 class="section-title">Local Spots</h3>
-        <p class="helper-text">Open nearby results for {{ selected_food or "that food" }}.</p>
-        <a class="option-link" href="{{ local_spots_url }}" target="_blank">Local spots</a>
-      </article>
-      {% endif %}
-
-      {% if show_results and ads %}
-      <article class="card ad-card">
-        <h3 class="section-title">🔥 Order Now</h3>
-        {% for ad in ads %}
-          <p class="ad-food">{{ ad.food }}</p>
-          <ul class="list-clean">
-            {% for brand in ad.brands %}
-              <li>
-                <a href="{{ brand.url }}" target="_blank">
-                  {{ brand.name }}
-                </a>
-              </li>
-            {% endfor %}
-          </ul>
+    <section class="chat-container">
+      <div class="chat-header">TastyBot 😏</div>
+      <div class="chat-messages">
+        {% for msg in response or [] %}
+          <div class="chat-bubble {{ msg.role }}">{{ msg.content }}</div>
         {% endfor %}
-      </article>
-      {% endif %}
-
-      {% if show_results and ingredients %}
-      <article class="card card-subtle">
-        <h3 class="section-title">🛒 Ingredients</h3>
-        <p class="helper-text">Pick what you want to add for {{ selected_food or "this dish" }}.</p>
-        <form method="post" action="/" class="action-grid">
-          <input type="hidden" name="action" value="add_grocery">
-          <div class="checklist">
-            {% for ingredient in ingredients %}
-            <label class="check-item">
-              <input type="checkbox" name="selected_ingredients" value="{{ ingredient }}">
-              <span>{{ ingredient }}</span>
-            </label>
-            {% endfor %}
-          </div>
-          <button type="submit" class="subtle-button">Add selected to grocery list</button>
-        </form>
-      </article>
-      {% endif %}
-
-      {% if show_results and grocery_list %}
-      <article class="card card-subtle">
-        <h3 class="section-title">🧾 Grocery List</h3>
-        <ul class="list-clean">
-          {% for item in grocery_list %}
-            <li>{{ item }}</li>
-          {% endfor %}
-        </ul>
-      </article>
-      {% endif %}
-
-      {% if show_results and (ingredients or recipe_steps) %}
-      <article class="card card-subtle">
-        <a href="#" class="buy-link">🛒 Get everything for this here</a>
-      </article>
-      {% endif %}
-
-      {% if show_results and recipe_steps %}
-      <article class="card card-subtle">
-        {% if not show_recipe %}
-        <h3 class="section-title">Recipe</h3>
-        <p class="helper-text">Ready when you are.</p>
-        <form method="post" action="/" class="pill-form">
-          <input type="hidden" name="action" value="show_recipe">
-          <button type="submit" class="subtle-button">Show recipe</button>
-        </form>
-        {% else %}
-        <h3 class="section-title">📖 Recipe Steps</h3>
-        <ol class="recipe-list">
-          {% for step in recipe_steps %}
-          <li>{{ step }}</li>
-          {% endfor %}
-        </ol>
-        {% endif %}
-      </article>
-      {% endif %}
+      </div>
     </section>
+
+    <form method="POST" action="/" class="chat-input">
+      <input type="text" name="user_input" placeholder="Tell me what you craving..." required>
+      <button type="submit">Send</button>
+    </form>
+
+    {% if food_options %}
+      <div class="option-buttons">
+        {% for opt in food_options %}
+          <form method="POST" action="/" class="pill-form">
+            <input type="hidden" name="user_input" value="{{ opt }}">
+            <button type="submit" class="pill-button">{{ opt }}</button>
+          </form>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% if show_results %}
+      <section class="stack">
+        {% if option_mode == "cook" and food_options %}
+          <article class="card card-subtle">
+            <h3 class="section-title">Cook Picks</h3>
+            <p class="helper-text">Tap a dish and I’ll build the cook plan.</p>
+            <div class="action-grid">
+              {% for food in food_options %}
+                <form method="POST" action="/" class="pill-form">
+                  <input type="hidden" name="action" value="pick_cook_food">
+                  <input type="hidden" name="food" value="{{ food }}">
+                  <button type="submit" class="pill-button">{{ food }}</button>
+                </form>
+              {% endfor %}
+            </div>
+          </article>
+        {% endif %}
+
+        {% if option_mode == "order" and order_options %}
+          <article class="card ad-card">
+            <h3 class="section-title">Order Picks</h3>
+            <p class="helper-text">Pick a delivery link or tap through for local spots.</p>
+            <div class="action-grid">
+              {% for option in order_options %}
+                <div class="option-card">
+                  <h4>{{ option.food }}</h4>
+                  <div class="option-actions">
+                    <a class="option-link" href="{{ option.url }}" target="_blank">Order now</a>
+                    <form method="POST" action="/" class="pill-form">
+                      <input type="hidden" name="action" value="see_more">
+                      <input type="hidden" name="food" value="{{ option.food }}">
+                      <button type="submit" class="subtle-button">See more</button>
+                    </form>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          </article>
+        {% endif %}
+
+        {% if local_spots_url %}
+          <article class="card card-subtle">
+            <h3 class="section-title">Local Spots</h3>
+            <p class="helper-text">Open nearby results for {{ selected_food or "that food" }}.</p>
+            <a class="option-link" href="{{ local_spots_url }}" target="_blank">Local spots</a>
+          </article>
+        {% endif %}
+
+        {% if ads %}
+          <article class="card ad-card">
+            <h3 class="section-title">🔥 Order Now</h3>
+            {% for ad in ads %}
+              <p class="ad-food">{{ ad.food }}</p>
+              <ul class="list-clean">
+                {% for brand in ad.brands %}
+                  <li>
+                    <a href="{{ brand.url }}" target="_blank">{{ brand.name }}</a>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% endfor %}
+          </article>
+        {% endif %}
+
+        {% if ingredients %}
+          <article class="card card-subtle">
+            <h3 class="section-title">🛒 Ingredients</h3>
+            <p class="helper-text">Pick what you want to add for {{ selected_food or "this dish" }}.</p>
+            <form method="POST" action="/" class="action-grid">
+              <input type="hidden" name="action" value="add_grocery">
+              <div class="checklist">
+                {% for ingredient in ingredients %}
+                  <label class="check-item">
+                    <input type="checkbox" name="selected_ingredients" value="{{ ingredient }}">
+                    <span>{{ ingredient }}</span>
+                  </label>
+                {% endfor %}
+              </div>
+              <button type="submit" class="subtle-button">Add selected to grocery list</button>
+            </form>
+          </article>
+        {% endif %}
+
+        {% if grocery_list %}
+          <article class="card card-subtle">
+            <h3 class="section-title">🧾 Grocery List</h3>
+            <ul class="list-clean">
+              {% for item in grocery_list %}
+                <li>{{ item }}</li>
+              {% endfor %}
+            </ul>
+          </article>
+        {% endif %}
+
+        {% if ingredients or recipe_steps %}
+          <article class="card card-subtle">
+            <a href="#" class="buy-link">🛒 Get everything for this here</a>
+          </article>
+        {% endif %}
+
+        {% if recipe_steps %}
+          <article class="card card-subtle">
+            {% if not show_recipe %}
+              <h3 class="section-title">Recipe</h3>
+              <p class="helper-text">Ready when you are.</p>
+              <form method="POST" action="/" class="pill-form">
+                <input type="hidden" name="action" value="show_recipe">
+                <button type="submit" class="subtle-button">Show recipe</button>
+              </form>
+            {% else %}
+              <h3 class="section-title">📖 Recipe Steps</h3>
+              <ol class="recipe-list">
+                {% for step in recipe_steps %}
+                  <li>{{ step }}</li>
+                {% endfor %}
+              </ol>
+            {% endif %}
+          </article>
+        {% endif %}
+      </section>
     {% endif %}
   </main>
 </body>

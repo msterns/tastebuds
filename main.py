@@ -368,16 +368,10 @@ def index():
             session["stage"] = "ask_taste"
     elif stage == "start":
         session["taste_preference"] = user_message
-
-        ai_reply = safe_generate_reply(
+        assistant_reply = safe_generate_reply(
             user_message,
             "Tell me what you craving 😏"
         )
-
-        suggestions = get_suggestions_reply(user_message)
-
-        assistant_reply = f"{ai_reply}\n\n{suggestions}"
-        session["stage"] = "choose_food"
     elif stage == "ask_taste":
         session["taste_preference"] = user_message
         assistant_reply = get_suggestions_reply(user_message)

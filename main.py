@@ -1,8 +1,29 @@
 import os
 import re
+from urllib.parse import quote_plus
 
-import requests
 from flask import Flask, render_template, request, session
+from core.ai_engine import get_ai_reply
+from core.flow_engine import (
+    filter_options_for_profile,
+    handle_choose_mode,
+    handle_cook_size,
+    handle_cook_speed,
+    handle_food_choice,
+    handle_order_location,
+    handle_vague_input,
+)
+from core.memory_engine import (
+    format_behavior_for_ai,
+    format_profile_for_ai,
+    get_user_profile,
+    infer_preferences,
+    track_rejection,
+    track_user_choice,
+    update_user_profile,
+)
+from utils.helpers import normalize
+from utils.logger import log_event
 
 FOOD_ADS = {
     "pizza": [
@@ -40,89 +61,11 @@ FOOD_ADS = {
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "tastebuds-dev-secret")
-API_KEY = os.getenv("OPENAI_API_KEY")
-SYSTEM_PROMPT = """You are a food assistant that adapts to the user's tone.
-
-playful -> casual, slightly AAVE, friendly
-neutral -> clear and helpful
-direct -> concise
-
-Never use profanity.
-Never force slang.
-Keep responses natural.
-"""
 
 
-def detect_vibe(message):
-    lowered = message.lower().strip()
-    playful_markers = [
-        "tryna", "tho", "fr", "ngl", "lol", "lmao", "ima", "finna",
-        "bruh", "lowkey", "highkey", "idk", "yall", "ain't", "wanna",
-    ]
-    direct_markers = {"cook", "order", "hungry", "spicy", "salty", "sweet", "show more"}
-
-    if any(marker in lowered for marker in playful_markers):
-        return "playful"
-    if len(lowered.split()) <= 2 or lowered in direct_markers:
-        return "direct"
-    return "neutral"
-
-
-def build_tone_prompt(prompt, vibe):
-    return (
-        f"{SYSTEM_PROMPT}\n\n"
-        f"User vibe: {vibe}.\n"
-        f"User message: {prompt}"
-    )
-
-
-def masked_api_key():
-    if not API_KEY:
-        return ""
-    if len(API_KEY) <= 8:
-        return "*" * len(API_KEY)
-    return f"{API_KEY[:7]}...{API_KEY[-4:]}"
-
-
-def generate_reply(prompt):
-    debug_log("API KEY", masked_api_key())
-    debug_log("CALLING OPENAI", prompt)
-
-    if not API_KEY:
-        return ""
-
-    vibe = detect_vibe(prompt)
-
-    response = requests.post(
-        "https://api.openai.com/v1/chat/completions",
-        headers={
-            "Authorization": f"Bearer {API_KEY}",
-            "Content-Type": "application/json",
-        },
-        json={
-            "model": "gpt-4o-mini",
-            "messages": [
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": build_tone_prompt(prompt, vibe)},
-            ],
-        },
-        timeout=30,
-    )
-    debug_log("OPENAI RESPONSE", response.json())
-    response.raise_for_status()
-    return response.json()["choices"][0]["message"]["content"]
-
-
-def safe_generate_reply(prompt, fallback):
-    try:
-        reply = generate_reply(prompt)
-        return reply or fallback
-    except requests.RequestException as exc:
-        debug_log("OPENAI ERROR", exc)
-        return fallback
-    except (KeyError, IndexError, TypeError, ValueError) as exc:
-        debug_log("OPENAI PARSE ERROR", exc)
-        return fallback
+def debug_log(label, value):
+    safe_text = str(value).encode("ascii", "backslashreplace").decode("ascii")
+    print(f"{label}: {safe_text}")
 
 
 def suggestion_footer():
@@ -194,15 +137,6 @@ def build_recipe_prompt(food):
     )
 
 
-def build_order_prompt(food):
-    return (
-        "You are TasteBuds, a casual funny food assistant. "
-        f"The selected food is {food}. "
-        "Give a short, casual reply naming the types of restaurants or spots that usually serve it well. "
-        "Keep it natural and concise."
-    )
-
-
 def fallback_cook_plan(food):
     return {
         "intro": f"Say less 😏 here's a quick way to make {food}.",
@@ -259,9 +193,11 @@ def parse_cook_plan(text, food):
 
 
 def get_cook_plan(food):
-    raw_plan = safe_generate_reply(
-        build_recipe_prompt(food),
-        "",
+    raw_plan = get_ai_reply(
+        food,
+        session,
+        fallback="",
+        prompt=build_recipe_prompt(food),
     )
     return parse_cook_plan(raw_plan, food)
 
@@ -278,37 +214,49 @@ def get_location_restaurants(food, location):
 
 def get_ads_for_options(options):
     ads = []
-
     for option in options:
         key = option.lower()
-
         for food, brands in FOOD_ADS.items():
             if food in key:
                 ads.append({
                     "food": option,
-                    "brands": brands
+                    "brands": brands,
                 })
-
     return ads
 
 
-def get_suggestions_reply(taste, show_more=False):
+def get_suggestion_options(taste, show_more=False):
+    profile = get_user_profile(session)
     fallback_options = natural_suggestion_options(show_more=show_more)
     fallback_reply = format_suggestions(fallback_options)
-    suggestions = safe_generate_reply(
-        build_suggestions_prompt(taste, show_more=show_more),
-        fallback_reply,
+    suggestions = get_ai_reply(
+        taste,
+        session,
+        fallback=fallback_reply,
+        prompt=f"{format_profile_for_ai(profile)}\n{build_suggestions_prompt(taste, show_more=show_more)}",
     )
     parsed_options = parse_suggestion_options(suggestions)
     if len(parsed_options) < 3:
         parsed_options = fallback_options
-        suggestions = format_suggestions(parsed_options)
-    else:
-        footer = suggestion_footer()
-        if footer not in suggestions:
-            suggestions = f"{suggestions}\n\n{footer}"
+    return filter_options_for_profile(parsed_options, session)
+
+
+def get_suggestions_reply(taste, show_more=False):
+    parsed_options = get_suggestion_options(taste, show_more=show_more)
+    if len(parsed_options) < 3:
+        session["food_options"] = parsed_options
+        session["last_suggestion"] = parsed_options[0] if parsed_options else ""
+        session["ads"] = []
+        session["selected_food"] = ""
+        session["ingredients"] = []
+        session["user_location"] = ""
+        session["grocery_list"] = []
+        session["recipe_steps"] = []
+        return "I got you 😏 but based on your preferences, let me find better options..."
+    suggestions = format_suggestions(parsed_options)
 
     session["food_options"] = parsed_options
+    session["last_suggestion"] = parsed_options[0] if parsed_options else ""
     session["ads"] = get_ads_for_options(parsed_options)
     session["selected_food"] = ""
     session["ingredients"] = []
@@ -318,18 +266,79 @@ def get_suggestions_reply(taste, show_more=False):
     return suggestions
 
 
-def normalize_choice(text):
-    return re.sub(r"[^a-z0-9 ]", "", text.lower()).strip()
+def build_cook_options(seed):
+    options = get_suggestion_options(f"easy home-cooked {seed}", show_more=False)
+    session["food_options"] = options[:3]
+    session["last_suggestion"] = session["food_options"][0] if session["food_options"] else ""
+    session["option_mode"] = "cook"
+    session["selected_food"] = ""
+    session["ingredients"] = []
+    session["recipe_steps"] = []
+    session["show_recipe"] = False
+    return session["food_options"]
 
 
-def debug_log(label, value):
-    safe_text = str(value).encode("ascii", "backslashreplace").decode("ascii")
-    print(f"{label}: {safe_text}")
+def build_order_options(seed, location, show_more=False):
+    options = get_suggestion_options(f"takeout {seed} in {location}", show_more=show_more)
+    cards = []
+    for option in options[:3]:
+        cards.append({
+            "food": option,
+            "url": f"https://www.google.com/search?q={quote_plus(f'{option} delivery near {location}')}",
+            "local_url": f"https://www.google.com/search?q={quote_plus(f'{option} near {location}')}",
+        })
+
+    session["order_options"] = cards
+    session["last_suggestion"] = cards[0]["food"] if cards else ""
+    session["option_mode"] = "order"
+    session["food_options"] = []
+    return cards
+
+
+def render_app(show_results=True):
+    return render_template(
+        "index.html",
+        response=session.get("history", []),
+        show_results=show_results,
+        ingredients=session.get("ingredients", []),
+        recipe_steps=session.get("recipe_steps", []),
+        grocery_list=session.get("grocery_list", []),
+        ads=session.get("ads", []),
+        food_options=session.get("food_options", []),
+        option_mode=session.get("option_mode", ""),
+        order_options=session.get("order_options", []),
+        show_recipe=session.get("show_recipe", False),
+        local_spots_url=session.get("local_spots_url", ""),
+        selected_food=session.get("selected_food", ""),
+    )
+
+
+def append_history(role, content):
+    history = session.get("history", [])
+    history.append({"role": role, "content": content})
+    session["history"] = history
+
+
+def log_request_state(user_input, session, profile_changed=None):
+    log_event("user_input", user_input)
+    log_event("stage", session.get("stage", ""))
+    log_event("selected_food", session.get("selected_food", ""))
+    if profile_changed is not None:
+        log_event("profile_changed", profile_changed)
+
+
+def build_personalization_prefix(profile):
+    if profile.get("likes", {}).get("seafood", 0) >= 2:
+        return "You been on seafood lately 😏\n\n"
+    if profile.get("diet"):
+        return f"Still keeping it {profile['diet']} right? 😏\n\n"
+    return ""
 
 
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "GET":
+        session.setdefault("history", [])
         return render_template(
             "index.html",
             response=None,
@@ -337,160 +346,224 @@ def index():
             ads=[],
             ingredients=[],
             recipe_steps=[],
-            grocery_list=[],
+            grocery_list=session.get("grocery_list", []),
+            food_options=[],
+            option_mode="",
+            order_options=[],
+            show_recipe=False,
+            local_spots_url="",
+            selected_food="",
         )
 
+    action = request.form.get("action", "").strip()
+    user_message = (request.form.get("message") or request.form.get("user_input", "")).strip()
+    lowered = normalize(user_message)
+    session.setdefault("history", [])
     assistant_reply = ""
-    user_message = request.form.get("message") or request.form.get("user_input", "")
-    user_message = user_message.strip()
-    lowered = user_message.lower()
 
-    if "history" not in session:
-        session["history"] = []
-
-    history = session.get("history", [])
-    food_options = session.get("food_options", [])
-    matched_option = next(
-        (
-            option
-            for option in food_options
-            if normalize_choice(option) == normalize_choice(user_message)
-        ),
-        "",
-    )
-    if matched_option:
-        session["selected_food"] = matched_option
-
-    if "cook" not in lowered:
+    if action not in {"add_grocery", "show_recipe"}:
         session["ingredients"] = []
         session["recipe_steps"] = []
-        session["grocery_list"] = []
+        session["show_recipe"] = False
 
-    if not any(keyword in lowered for keyword in ["show more", "ideas", "what should i eat"]):
-        session["ads"] = []
+    if not action:
+        session["local_spots_url"] = ""
+
+    if action == "pick_cook_food":
+        food = request.form.get("food", "").strip()
+        if food:
+            session["selected_food"] = food
+            track_user_choice(food, session)
+            infer_preferences(session)
+            session["option_mode"] = "cook"
+            cook_plan = get_cook_plan(food)
+            session["ingredients"] = cook_plan["ingredients"]
+            session["recipe_steps"] = cook_plan["steps"]
+            session["show_recipe"] = False
+            assistant_reply = f"Bet 😏 let's make {food}."
+    elif action == "add_grocery":
+        selected_items = request.form.getlist("selected_ingredients")
+        grocery_list = session.get("grocery_list", [])
+        for item in selected_items:
+            if item and item not in grocery_list:
+                grocery_list.append(item)
+        session["grocery_list"] = grocery_list
+        assistant_reply = "Added to your grocery list 😏"
+    elif action == "show_recipe":
+        session["show_recipe"] = True
+        assistant_reply = f"Say less 😏 here's the recipe for {session.get('selected_food', 'that')}."
+    elif action == "see_more":
+        food = request.form.get("food", "").strip()
+        location = session.get("user_location", "")
+        session["selected_food"] = food
+        if food and location:
+            session["local_spots_url"] = (
+                f"https://www.google.com/search?q={quote_plus(f'{food} near {location}')}"
+            )
+        assistant_reply = f"Bet 😏 peep local spots for {food}."
+
+    if assistant_reply:
+        append_history("assistant", assistant_reply)
+        log_request_state(f"[action] {action}", session)
+        debug_log("user_input", f"[action] {action}")
+        debug_log("assistant_reply", assistant_reply)
+        return render_app()
 
     if not user_message:
         assistant_reply = "Tell me what you craving 😏"
+        append_history("assistant", assistant_reply)
+        log_request_state(user_message, session)
+        debug_log("user_input", user_message)
+        debug_log("assistant_reply", assistant_reply)
+        return render_app()
+
+    append_history("user", user_message)
+    current_stage = session.get("stage", "")
+
+    if any(word in lowered for word in ["nah", "no", "not that", "something else"]):
+        session["last_rejected"] = True
+        track_rejection(session)
     else:
-        history.append({
-            "role": "user",
-            "content": user_message
-        })
+        session["last_rejected"] = False
 
-        current_stage = session.get("stage", "")
+    guided_reply = handle_vague_input(lowered, session)
+    if guided_reply:
+        append_history("assistant", guided_reply)
+        log_request_state(user_message, session)
+        debug_log("user_input", user_message)
+        debug_log("assistant_reply", guided_reply)
+        return render_app()
 
-        if lowered in ["idk", "i dont know", "not sure", "whatever", "anything"]:
-            assistant_reply = "Aight 😏 you tryna cook or you tryna order?"
-            session["stage"] = "choose_mode"
-        elif lowered == "cook":
-            assistant_reply = "Bet 😏 this for just you or you feeding folks?"
-            session["stage"] = "cook_size"
-        elif lowered == "order":
-            assistant_reply = "Say less 😏 where you at? Drop a city or zip"
-            session["stage"] = "ask_location"
-        elif current_stage == "cook_size":
-            if "me" in lowered or "just me" in lowered:
-                assistant_reply = "Say less 😏 you want quick & easy or you got time to cook?"
-                session["stage"] = "cook_speed"
-            else:
-                assistant_reply = "Bet 😏 is it quick & easy or you got time to cook?"
-        elif current_stage == "cook_speed":
-            if "quick" in lowered:
-                assistant_reply = (
-                    "😂 I got you, no struggle meals.\n\n"
-                    "Try:\n"
-                    "- garlic butter chicken\n"
-                    "- shrimp pasta\n"
-                    "- loaded quesadilla"
-                )
-                session["stage"] = "done"
-            else:
-                assistant_reply = "Say less 😏 you want comfort food, spicy, or something light?"
-        elif current_stage == "ask_location":
-            session["user_location"] = user_message
-            assistant_reply = get_location_restaurants(
-                session.get("selected_food", ""),
-                user_message
-            )
-            session["stage"] = ""
-
-        if assistant_reply:
-            history.append({
-                "role": "assistant",
-                "content": assistant_reply
-            })
-            session["history"] = history
-
+    if current_stage == "choose_mode":
+        guided_reply = handle_choose_mode(lowered, session)
+        if guided_reply:
+            if lowered == "order":
+                session["option_mode"] = "order"
+                session["order_options"] = []
+                session["food_options"] = []
+            append_history("assistant", guided_reply)
+            log_request_state(user_message, session)
             debug_log("user_input", user_message)
-            debug_log("assistant_reply", assistant_reply)
+            debug_log("assistant_reply", guided_reply)
+            return render_app()
 
-            return render_template(
-                "index.html",
-                response=session.get("history", []),
-                show_results=True,
-                ingredients=session.get("ingredients", []),
-                recipe_steps=session.get("recipe_steps", []),
-                grocery_list=session.get("grocery_list", []),
-                ads=session.get("ads", []),
+    guided_reply = handle_cook_size(lowered, session)
+    if guided_reply:
+        append_history("assistant", guided_reply)
+        log_request_state(user_message, session)
+        debug_log("user_input", user_message)
+        debug_log("assistant_reply", guided_reply)
+        return render_app()
+
+    cook_speed_result = handle_cook_speed(lowered, session)
+    if cook_speed_result:
+        guided_reply, options = cook_speed_result
+        if options:
+            session["food_options"] = options
+            session["last_suggestion"] = options[0] if options else ""
+            session["option_mode"] = "cook"
+            session["selected_food"] = ""
+            session["ingredients"] = []
+            session["recipe_steps"] = []
+            session["show_recipe"] = False
+        else:
+            profile = get_user_profile(session)
+            guided_reply = get_ai_reply(
+                f"{format_profile_for_ai(profile)}\nUser message: find better cook options for {user_message}",
+                session,
+                fallback=guided_reply,
             )
+        append_history("assistant", guided_reply)
+        log_request_state(user_message, session)
+        debug_log("user_input", user_message)
+        debug_log("assistant_reply", guided_reply)
+        return render_app()
 
-        ai_reply = safe_generate_reply(
-            user_message,
-            "Tell me what you craving 😏"
-        )
+    food_choice_reply = handle_food_choice(lowered, session)
+    if food_choice_reply:
+        food = session.get("selected_food", user_message)
+        track_user_choice(food, session)
+        infer_preferences(session)
+        cook_plan = get_cook_plan(food)
+        session["option_mode"] = "cook"
+        session["ingredients"] = cook_plan["ingredients"]
+        session["recipe_steps"] = cook_plan["steps"]
+        session["show_recipe"] = False
+        append_history("assistant", food_choice_reply)
+        log_request_state(user_message, session)
+        debug_log("user_input", user_message)
+        debug_log("assistant_reply", food_choice_reply)
+        return render_app()
 
-        assistant_reply = ai_reply
-        session["taste_preference"] = user_message
+    if lowered == "cook":
+        guided_reply = handle_choose_mode(lowered, session)
+        if guided_reply:
+            append_history("assistant", guided_reply)
+            log_request_state(user_message, session)
+            debug_log("user_input", user_message)
+            debug_log("assistant_reply", guided_reply)
+            return render_app()
 
-        if "show more" in lowered or "ideas" in lowered or "what should i eat" in lowered:
-            suggestions = get_suggestions_reply(user_message)
-            assistant_reply += "\n\n" + suggestions
-        elif "cook" in lowered:
-            selected_food = session.get("selected_food", user_message)
-            cook_plan = get_cook_plan(selected_food)
+    if lowered == "order":
+        guided_reply = handle_choose_mode(lowered, session)
+        if guided_reply:
+            session["option_mode"] = "order"
+            session["order_options"] = []
+            session["food_options"] = []
+            append_history("assistant", guided_reply)
+            log_request_state(user_message, session)
+            debug_log("user_input", user_message)
+            debug_log("assistant_reply", guided_reply)
+            return render_app()
 
-            assistant_reply += "\n\n" + cook_plan["intro"]
+    order_location_reply = handle_order_location(lowered, session)
+    if order_location_reply:
+        seed = session.get("taste_preference") or session.get("selected_food") or "something good"
+        build_order_options(seed, user_message)
+        append_history("assistant", order_location_reply)
+        log_request_state(user_message, session)
+        debug_log("user_input", user_message)
+        debug_log("assistant_reply", order_location_reply)
+        return render_app()
 
-            session["ingredients"] = cook_plan["ingredients"]
-            session["recipe_steps"] = cook_plan["steps"]
-            session["grocery_list"] = cook_plan["ingredients"]
-        elif "order" in lowered:
-            selected_food = session.get("selected_food", user_message)
+    if current_stage in ["choose_food", "cook_size", "cook_speed", "ask_location"]:
+        assistant_reply = "Say that again for me 😏 I got you"
+        append_history("assistant", assistant_reply)
+        log_request_state(user_message, session)
+        debug_log("user_input", user_message)
+        debug_log("assistant_reply", assistant_reply)
+        return render_app()
 
-            if not session.get("user_location"):
-                assistant_reply += "\n\nWhere you at? Drop a city or zip 😏"
-                session["stage"] = "ask_location"
-            else:
-                assistant_reply += "\n\n" + get_location_restaurants(
-                    selected_food,
-                    session.get("user_location")
-                )
-        elif session.get("stage") == "ask_location":
-            session["user_location"] = user_message
-            assistant_reply += "\n\n" + get_location_restaurants(
-                session.get("selected_food", ""),
-                user_message
-            )
-            session["stage"] = ""
+    previous_profile = dict(get_user_profile(session))
+    profile = update_user_profile(user_message, session)
+    profile_changed = profile != previous_profile
+    full_context = f"""
+{format_profile_for_ai(profile)}
 
-        history.append({
-            "role": "assistant",
-            "content": assistant_reply
-        })
-        session["history"] = history
+{format_behavior_for_ai(profile)}
 
+User message: {user_message}
+"""
+
+    assistant_reply = get_ai_reply(full_context, session)
+    if not assistant_reply or assistant_reply.strip() == "":
+        assistant_reply = "Say that again for me 😏 I got you"
+    prefix = build_personalization_prefix(profile)
+    if prefix and not assistant_reply.startswith(prefix.strip()):
+        assistant_reply = prefix + assistant_reply
+    session["taste_preference"] = user_message
+
+    if "show more" in lowered or "ideas" in lowered or "what should i eat" in lowered:
+        suggestions = get_suggestions_reply(user_message)
+        assistant_reply += "\n\n" + suggestions
+
+    if not assistant_reply or assistant_reply.strip() == "":
+        assistant_reply = "Aight 😏 let’s reset—what you craving?"
+    append_history("assistant", assistant_reply)
+    log_request_state(user_message, session, profile_changed=profile_changed)
     debug_log("user_input", user_message)
     debug_log("assistant_reply", assistant_reply)
-
-    return render_template(
-        "index.html",
-        response=session.get("history", []),
-        show_results=True,
-        ingredients=session.get("ingredients", []),
-        recipe_steps=session.get("recipe_steps", []),
-        grocery_list=session.get("grocery_list", []),
-        ads=session.get("ads", []),
-    )
+    return render_app()
 
 
 if __name__ == "__main__":

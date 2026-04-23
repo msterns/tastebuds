@@ -1,7 +1,6 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta name='impact-site-verification' value='57064d5d-5ec3-4986-ad72-bff43855cea6' />
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TasteBuds</title>
@@ -377,6 +376,102 @@
       flex: 0 0 auto;
     }
 
+    .action-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .pill-form {
+      margin: 0;
+    }
+
+    .pill-button,
+    .subtle-button {
+      width: 100%;
+      border: 1px solid rgba(255, 45, 45, 0.26);
+      border-radius: 16px;
+      background: #171717;
+      color: var(--text);
+      padding: 13px 14px;
+      text-align: left;
+      cursor: pointer;
+      transition: transform 0.18s ease, border-color 0.18s ease;
+    }
+
+    .pill-button:hover,
+    .subtle-button:hover,
+    .pill-button:focus-visible,
+    .subtle-button:focus-visible {
+      transform: translateY(-1px);
+      border-color: rgba(255, 45, 45, 0.58);
+    }
+
+    .subtle-button {
+      text-align: center;
+      background: #111;
+    }
+
+    .option-card {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border-radius: 18px;
+      background: #141414;
+      border: 1px solid #292929;
+    }
+
+    .option-card h4 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .option-actions {
+      display: grid;
+      gap: 8px;
+    }
+
+    .option-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, #ff3b30 0%, var(--primary) 100%);
+      color: white;
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    .helper-text {
+      margin: 0 0 10px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .buy-link {
+      display: block;
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 122, 0, 0.28);
+      background: linear-gradient(180deg, rgba(255, 122, 0, 0.14), rgba(255, 45, 45, 0.08));
+      color: #fff3e8;
+      text-decoration: none;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .buy-link:hover,
+    .buy-link:focus-visible {
+      border-color: rgba(255, 122, 0, 0.48);
+      filter: brightness(1.04);
+    }
+
+    .chat-history {
+      display: grid;
+      gap: 12px;
+    }
+
     @media (max-width: 390px) {
       .hero-copy {
         width: calc(100% - 160px);
@@ -457,6 +552,52 @@
         </div>
       </article>
 
+      {% if show_results and option_mode == "cook" and food_options %}
+      <article class="card card-subtle">
+        <h3 class="section-title">Cook Picks</h3>
+        <p class="helper-text">Tap a dish and I’ll build the cook plan.</p>
+        <div class="action-grid">
+          {% for food in food_options %}
+          <form method="post" action="/" class="pill-form">
+            <input type="hidden" name="action" value="pick_cook_food">
+            <input type="hidden" name="food" value="{{ food }}">
+            <button type="submit" class="pill-button">{{ food }}</button>
+          </form>
+          {% endfor %}
+        </div>
+      </article>
+      {% endif %}
+
+      {% if show_results and option_mode == "order" and order_options %}
+      <article class="card ad-card">
+        <h3 class="section-title">Order Picks</h3>
+        <p class="helper-text">Pick a delivery search or tap through for local spots.</p>
+        <div class="action-grid">
+          {% for option in order_options %}
+          <div class="option-card">
+            <h4>{{ option.food }}</h4>
+            <div class="option-actions">
+              <a class="option-link" href="{{ option.url }}" target="_blank">Order now</a>
+              <form method="post" action="/" class="pill-form">
+                <input type="hidden" name="action" value="see_more">
+                <input type="hidden" name="food" value="{{ option.food }}">
+                <button type="submit" class="subtle-button">See more</button>
+              </form>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </article>
+      {% endif %}
+
+      {% if show_results and local_spots_url %}
+      <article class="card card-subtle">
+        <h3 class="section-title">Local Spots</h3>
+        <p class="helper-text">Open nearby results for {{ selected_food or "that food" }}.</p>
+        <a class="option-link" href="{{ local_spots_url }}" target="_blank">Local spots</a>
+      </article>
+      {% endif %}
+
       {% if show_results and ads %}
       <article class="card ad-card">
         <h3 class="section-title">🔥 Order Now</h3>
@@ -478,14 +619,19 @@
       {% if show_results and ingredients %}
       <article class="card card-subtle">
         <h3 class="section-title">🛒 Ingredients</h3>
-        <div class="checklist">
-          {% for ingredient in ingredients %}
-          <label class="check-item">
-            <input type="checkbox">
-            <span>{{ ingredient }}</span>
-          </label>
-          {% endfor %}
-        </div>
+        <p class="helper-text">Pick what you want to add for {{ selected_food or "this dish" }}.</p>
+        <form method="post" action="/" class="action-grid">
+          <input type="hidden" name="action" value="add_grocery">
+          <div class="checklist">
+            {% for ingredient in ingredients %}
+            <label class="check-item">
+              <input type="checkbox" name="selected_ingredients" value="{{ ingredient }}">
+              <span>{{ ingredient }}</span>
+            </label>
+            {% endfor %}
+          </div>
+          <button type="submit" class="subtle-button">Add selected to grocery list</button>
+        </form>
       </article>
       {% endif %}
 
@@ -500,14 +646,29 @@
       </article>
       {% endif %}
 
+      {% if show_results and (ingredients or recipe_steps) %}
+      <article class="card card-subtle">
+        <a href="#" class="buy-link">🛒 Get everything for this here</a>
+      </article>
+      {% endif %}
+
       {% if show_results and recipe_steps %}
       <article class="card card-subtle">
+        {% if not show_recipe %}
+        <h3 class="section-title">Recipe</h3>
+        <p class="helper-text">Ready when you are.</p>
+        <form method="post" action="/" class="pill-form">
+          <input type="hidden" name="action" value="show_recipe">
+          <button type="submit" class="subtle-button">Show recipe</button>
+        </form>
+        {% else %}
         <h3 class="section-title">📖 Recipe Steps</h3>
         <ol class="recipe-list">
           {% for step in recipe_steps %}
           <li>{{ step }}</li>
           {% endfor %}
         </ol>
+        {% endif %}
       </article>
       {% endif %}
     </section>

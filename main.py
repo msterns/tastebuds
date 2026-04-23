@@ -340,124 +340,151 @@ def index():
             grocery_list=[],
         )
 
-    assistant_reply = session.get("assistant_reply", "")
+    assistant_reply = ""
     user_message = request.form.get("message") or request.form.get("user_input", "")
     user_message = user_message.strip()
     lowered = user_message.lower()
-    wants_suggestions = (
-        "show more" in lowered or "ideas" in lowered or "options" in lowered
-    )
-    stage = session.get("stage", "start")
-    saved_taste = session.get("taste_preference", "")
-    selected_food = session.get("selected_food", "")
-    food_options = session.get("food_options", [])
 
-    if lowered != "cook":
+    if "history" not in session:
+        session["history"] = []
+
+    history = session.get("history", [])
+    food_options = session.get("food_options", [])
+    matched_option = next(
+        (
+            option
+            for option in food_options
+            if normalize_choice(option) == normalize_choice(user_message)
+        ),
+        "",
+    )
+    if matched_option:
+        session["selected_food"] = matched_option
+
+    if "cook" not in lowered:
         session["ingredients"] = []
-        session["user_location"] = ""
-        session["grocery_list"] = []
         session["recipe_steps"] = []
+        session["grocery_list"] = []
+
+    if not any(keyword in lowered for keyword in ["show more", "ideas", "what should i eat"]):
+        session["ads"] = []
 
     if not user_message:
-        assistant_reply = "Say a craving and I got you."
-    elif wants_suggestions:
-        suggestion_taste = saved_taste or user_message
-        if suggestion_taste:
-            session["taste_preference"] = suggestion_taste
-            assistant_reply = get_suggestions_reply(
-                suggestion_taste,
-                show_more="show more" in lowered,
+        assistant_reply = "Tell me what you craving 😏"
+    else:
+        history.append({
+            "role": "user",
+            "content": user_message
+        })
+
+        current_stage = session.get("stage", "")
+
+        if lowered in ["idk", "i dont know", "not sure", "whatever", "anything"]:
+            assistant_reply = "Aight 😏 you tryna cook or you tryna order?"
+            session["stage"] = "choose_mode"
+        elif lowered == "cook":
+            assistant_reply = "Bet 😏 this for just you or you feeding folks?"
+            session["stage"] = "cook_size"
+        elif lowered == "order":
+            assistant_reply = "Say less 😏 where you at? Drop a city or zip"
+            session["stage"] = "ask_location"
+        elif current_stage == "cook_size":
+            if "me" in lowered or "just me" in lowered:
+                assistant_reply = "Say less 😏 you want quick & easy or you got time to cook?"
+                session["stage"] = "cook_speed"
+            else:
+                assistant_reply = "Bet 😏 is it quick & easy or you got time to cook?"
+        elif current_stage == "cook_speed":
+            if "quick" in lowered:
+                assistant_reply = (
+                    "😂 I got you, no struggle meals.\n\n"
+                    "Try:\n"
+                    "- garlic butter chicken\n"
+                    "- shrimp pasta\n"
+                    "- loaded quesadilla"
+                )
+                session["stage"] = "done"
+            else:
+                assistant_reply = "Say less 😏 you want comfort food, spicy, or something light?"
+        elif current_stage == "ask_location":
+            session["user_location"] = user_message
+            assistant_reply = get_location_restaurants(
+                session.get("selected_food", ""),
+                user_message
             )
-            session["stage"] = "choose_food"
-        else:
-            assistant_reply = (
-                "What your taste buds saying tho? Sweet, salty, spicy, comfort?"
+            session["stage"] = ""
+
+        if assistant_reply:
+            history.append({
+                "role": "assistant",
+                "content": assistant_reply
+            })
+            session["history"] = history
+
+            debug_log("user_input", user_message)
+            debug_log("assistant_reply", assistant_reply)
+
+            return render_template(
+                "index.html",
+                response=session.get("history", []),
+                show_results=True,
+                ingredients=session.get("ingredients", []),
+                recipe_steps=session.get("recipe_steps", []),
+                grocery_list=session.get("grocery_list", []),
+                ads=session.get("ads", []),
             )
-            session["stage"] = "ask_taste"
-    elif stage == "start":
-        session["taste_preference"] = user_message
-        assistant_reply = safe_generate_reply(
+
+        ai_reply = safe_generate_reply(
             user_message,
             "Tell me what you craving 😏"
         )
-    elif stage == "ask_taste":
+
+        assistant_reply = ai_reply
         session["taste_preference"] = user_message
-        assistant_reply = safe_generate_reply(
-            user_message,
-            "Tell me what you craving ðŸ˜"
-        )
-    elif lowered == "cook":
-        if selected_food:
+
+        if "show more" in lowered or "ideas" in lowered or "what should i eat" in lowered:
+            suggestions = get_suggestions_reply(user_message)
+            assistant_reply += "\n\n" + suggestions
+        elif "cook" in lowered:
+            selected_food = session.get("selected_food", user_message)
             cook_plan = get_cook_plan(selected_food)
 
-            assistant_reply = cook_plan["intro"]
+            assistant_reply += "\n\n" + cook_plan["intro"]
 
-            # Store recipe data
             session["ingredients"] = cook_plan["ingredients"]
             session["recipe_steps"] = cook_plan["steps"]
-
-            # NEW: grocery list (same as ingredients for now)
             session["grocery_list"] = cook_plan["ingredients"]
+        elif "order" in lowered:
+            selected_food = session.get("selected_food", user_message)
 
-            session["stage"] = "done"
-        else:
-            assistant_reply = "Pick one first or say 'show more' 👀"
-            session["stage"] = "choose_food"
-    elif lowered == "order":
-        if selected_food:
             if not session.get("user_location"):
-                assistant_reply = "Where you at? Drop a city or zip 😏"
+                assistant_reply += "\n\nWhere you at? Drop a city or zip 😏"
                 session["stage"] = "ask_location"
             else:
-                assistant_reply = get_location_restaurants(
+                assistant_reply += "\n\n" + get_location_restaurants(
                     selected_food,
                     session.get("user_location")
                 )
-                session["stage"] = "done"
-        else:
-            assistant_reply = "Pick one first or say 'show more' 👀"
-            session["stage"] = "choose_food"
-    elif stage == "ask_location":
-        session["user_location"] = user_message
+        elif session.get("stage") == "ask_location":
+            session["user_location"] = user_message
+            assistant_reply += "\n\n" + get_location_restaurants(
+                session.get("selected_food", ""),
+                user_message
+            )
+            session["stage"] = ""
 
-        # generate restaurant suggestions
-        assistant_reply = get_location_restaurants(
-            session.get("selected_food", ""),
-            user_message
-        )
-
-        session["stage"] = "done"
-    elif stage == "choose_food":
-        normalized_message = normalize_choice(user_message)
-        matched_option = next(
-            (
-                option
-                for option in food_options
-                if normalize_choice(option) == normalized_message
-            ),
-            "",
-        )
-        if matched_option:
-            session["selected_food"] = matched_option
-            assistant_reply = "Bet 😏 you tryna cook or order?"
-            session["stage"] = "choose_mode"
-        else:
-            assistant_reply = "Pick one from the list or say 'show more' 👀"
-    elif stage == "choose_mode":
-        assistant_reply = "Say 'cook' or 'order' 😏"
-    else:
-        assistant_reply = (
-            "If you want another round, throw me a new craving and we can run it back."
-        )
-        session["stage"] = "ask_taste"
+        history.append({
+            "role": "assistant",
+            "content": assistant_reply
+        })
+        session["history"] = history
 
     debug_log("user_input", user_message)
     debug_log("assistant_reply", assistant_reply)
-    session["assistant_reply"] = assistant_reply
 
     return render_template(
         "index.html",
-        response=assistant_reply,
+        response=session.get("history", []),
         show_results=True,
         ingredients=session.get("ingredients", []),
         recipe_steps=session.get("recipe_steps", []),

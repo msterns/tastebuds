@@ -448,7 +448,13 @@
     <section class="stack">
       <article class="card">
         <h2 class="section-title">TasteBuds</h2>
-        <p class="assistant-text">{{ response }}</p>
+        <div class="chat-history">
+          {% for message in response %}
+            {% if message.role == "assistant" %}
+            <p class="assistant-text">{{ message.content }}</p>
+            {% endif %}
+          {% endfor %}
+        </div>
       </article>
 
       {% if show_results and ads %}

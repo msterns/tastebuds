@@ -344,6 +344,9 @@ def index():
     user_message = request.form.get("message") or request.form.get("user_input", "")
     user_message = user_message.strip()
     lowered = user_message.lower()
+    wants_suggestions = (
+        "show more" in lowered or "ideas" in lowered or "options" in lowered
+    )
     stage = session.get("stage", "start")
     saved_taste = session.get("taste_preference", "")
     selected_food = session.get("selected_food", "")
@@ -357,9 +360,14 @@ def index():
 
     if not user_message:
         assistant_reply = "Say a craving and I got you."
-    elif lowered == "show more":
-        if saved_taste:
-            assistant_reply = get_suggestions_reply(saved_taste, show_more=True)
+    elif wants_suggestions:
+        suggestion_taste = saved_taste or user_message
+        if suggestion_taste:
+            session["taste_preference"] = suggestion_taste
+            assistant_reply = get_suggestions_reply(
+                suggestion_taste,
+                show_more="show more" in lowered,
+            )
             session["stage"] = "choose_food"
         else:
             assistant_reply = (
@@ -374,8 +382,10 @@ def index():
         )
     elif stage == "ask_taste":
         session["taste_preference"] = user_message
-        assistant_reply = get_suggestions_reply(user_message)
-        session["stage"] = "choose_food"
+        assistant_reply = safe_generate_reply(
+            user_message,
+            "Tell me what you craving ðŸ˜"
+        )
     elif lowered == "cook":
         if selected_food:
             cook_plan = get_cook_plan(selected_food)

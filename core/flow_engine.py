@@ -57,33 +57,85 @@ def handle_vague_input(lowered: str, session: Dict[str, Any]) -> Optional[str]:
 
 def handle_choose_mode(lowered: str, session: Dict[str, Any]) -> Optional[str]:
     if lowered == "cook":
-        session["stage"] = "cook_size"
-        return "Bet 😏 this for just you or you feeding folks?"
+        session["stage"] = "meal_size"
+        return "Bet 😏 this just for you or you feeding folks?"
     if lowered == "order":
         session["stage"] = "ask_location"
         return "Say less 😏 where you at? Drop a city or zip"
     return None
 
 
-def handle_cook_size(lowered: str, session: Dict[str, Any]) -> Optional[str]:
-    if session.get("stage") != "cook_size":
+def handle_direct_food_start(user_message: str, lowered: str, session: Dict[str, Any]) -> Optional[str]:
+    blocked_phrases = [
+        "show more",
+        "ideas",
+        "what should i eat",
+        "order",
+        "cook",
+        "vegan",
+        "keto",
+        "allergic",
+        "don't like",
+        "dont like",
+    ]
+    if session.get("stage"):
+        return None
+    if lowered in VAGUE_INPUTS:
+        return None
+    if any(phrase in lowered for phrase in blocked_phrases):
+        return None
+    if len(lowered.split()) > 4:
+        return None
+
+    session["selected_food"] = user_message.strip()
+    session["stage"] = "cook_style"
+    return "You want that buttery or spicy? 😏"
+
+
+def handle_cook_style(lowered: str, session: Dict[str, Any]) -> Optional[str]:
+    if session.get("stage") != "cook_style":
+        return None
+
+    if "spicy" in lowered:
+        session["taste_preference"] = "spicy"
+        session["stage"] = "meal_size"
+        return "Bet 😏 this just for you or you feeding folks?"
+    if "buttery" in lowered or "butter" in lowered:
+        session["taste_preference"] = "buttery"
+        session["stage"] = "meal_size"
+        return "Bet 😏 this just for you or you feeding folks?"
+    return "You want that buttery or spicy? 😏"
+
+
+def handle_meal_size(lowered: str, session: Dict[str, Any]) -> Optional[str]:
+    if session.get("stage") != "meal_size":
         return None
 
     if "just me" in lowered or lowered == "me":
         session["stage"] = "cook_speed"
-        return "Say less 😏 you want quick & easy or you got time to cook?"
+        return "Say less 😏 you want something quick or you got time?"
     if "folks" in lowered or "family" in lowered or "people" in lowered:
         session["stage"] = "cook_speed"
         return "Bet 😏 we feeding folks. You want quick or you got time to go all out?"
-    return None
+    return "Bet 😏 this just for you or you feeding folks?"
 
 
 def handle_cook_speed(lowered: str, session: Dict[str, Any]) -> Optional[Tuple[str, list[str]]]:
     if session.get("stage") != "cook_speed":
         return None
 
+    selected_food = session.get("selected_food", "").strip()
+    taste = session.get("taste_preference", "").strip()
+
     if "quick" in lowered:
-        options = ["garlic butter chicken", "shrimp pasta", "loaded quesadilla"]
+        if selected_food:
+            options = [
+                f"{taste} {selected_food}".strip(),
+                f"{selected_food} pasta",
+                f"{selected_food} tacos",
+            ]
+        else:
+            options = ["garlic butter chicken", "shrimp pasta", "loaded quesadilla"]
         filtered_options = filter_options_for_profile(options, session)
         session["stage"] = "choose_food"
         session["food_options"] = filtered_options
@@ -92,7 +144,14 @@ def handle_cook_speed(lowered: str, session: Dict[str, Any]) -> Optional[Tuple[s
         return ("😂 I got you, no struggle meals. Pick one 👇", filtered_options)
 
     if "time" in lowered or "full" in lowered:
-        options = ["baked ziti", "fried chicken dinner", "steak & potatoes"]
+        if selected_food:
+            options = [
+                f"{taste} {selected_food} platter".strip(),
+                f"loaded {selected_food}",
+                f"{selected_food} dinner",
+            ]
+        else:
+            options = ["baked ziti", "fried chicken dinner", "steak & potatoes"]
         filtered_options = filter_options_for_profile(options, session)
         session["stage"] = "choose_food"
         session["food_options"] = filtered_options
@@ -100,7 +159,7 @@ def handle_cook_speed(lowered: str, session: Dict[str, Any]) -> Optional[Tuple[s
             return ("I got you 😏 but based on your preferences, let me find better options...", [])
         return ("Say less 😏 we cooking for real. Pick one 👇", filtered_options)
 
-    return None
+    return ("Say less 😏 you want something quick or you got time?", [])
 
 
 def handle_food_choice(lowered: str, session: Dict[str, Any]) -> Optional[str]:
@@ -112,9 +171,9 @@ def handle_food_choice(lowered: str, session: Dict[str, Any]) -> Optional[str]:
 
     if match:
         session["selected_food"] = match
-        session["stage"] = "cook_details"
+        session["stage"] = ""
         return f"Bet 😏 {match} it is. I got ingredients and the recipe ready for you 👇"
-    return None
+    return "Pick one from the options and I got you 😏"
 
 
 def handle_order_location(lowered: str, session: Dict[str, Any]) -> Optional[str]:
@@ -122,5 +181,5 @@ def handle_order_location(lowered: str, session: Dict[str, Any]) -> Optional[str
         return None
 
     session["user_location"] = lowered
-    session["stage"] = "order_results"
+    session["stage"] = ""
     return f"Say less 😏 here’s some spots near {lowered} 👇"
